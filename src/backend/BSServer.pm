@@ -624,6 +624,46 @@ sub dispatch_checkcgi {
   die("unknown parameter '".join("', '", @bad)."'\n") if @bad;
 }
 
+
+# dispatches are the uri pattern => fn() mapping
+#
+# eg 
+#  'POST:/source/$project/$package cmd=diff rev? orev:rev? oproject:project? opackage:package? expand:bool? linkrev? olinkrev:linkrev? unified:bool?' => \&sourcediff,
+#
+# maps a URI like:
+#    /source/home:lbt/emacs?332&orev=323&oproject=home:cvm&opackage=vi&expand&
+# to call
+#    &sourcediff with
+#      $project=home:lbt
+#      $package=emacs
+#      $cmd=diff
+#      $rev=332
+#      $orev=323
+#      $expand=1
+#
+# [<auth>] [<header>] <path> [<variables>] => <function>
+# <auth> ::== "!" <role>
+# <header> ::== ( "GET" | "HEAD" | "PUT" | "POST" | "DELETE" ) ":"
+# <path> ::== { "/" <path-element> }+
+# <path-element> ::== <non / string> | <perlscalar>
+# <variables> ::== <perlscalar> [":" <type>] ["?"] | "*:*"
+# <type> ::== "rev" | "bool" | "project" | "linkrev"
+#
+# <auth> is ??probably useful...??
+#
+# The <header> defines the http type
+#
+# The <path> matches the main routing path of the uri
+# and allocates non-fixed elements to <perlscalar>
+#
+# the <variables> allow query elements to be defined
+# linkrev/rev expects an OBS revision such as 133
+# bool expects the presence or absence of a query element : &var&
+# project expects a projid such as : home:lbt
+# 
+# The ? for a variable indicates that it is optional.
+
+
 sub compile_dispatches {
   my ($disps, $verifyers, $callfunction) = @_;
   my @disps = @$disps;

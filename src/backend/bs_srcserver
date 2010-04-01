@@ -4035,6 +4035,7 @@ sub worker_lastevents {
     my @args = map {"filter=$_"} @{$watch || []};
     push @args, "start=$cgi->{'start'}";
     push @args, "obsname=$cgi->{'obsname'}" if $cgi->{'obsname'};
+    push @args, "alltypes" if $cgi->{'alltypes'};
     BSHandoff::handoff($ajaxsocket, '/lastevents', undef, @args);
     exit(0);
   }
@@ -4070,13 +4071,13 @@ sub worker_lastevents {
     for my $ev (splice @events) {
       if ($ev->{'type'} eq 'package') {
         next unless defined $ev->{'package'};
-        next unless $watch{"package/$ev->{'project'}/$ev->{'package'}"} || $watch{"package/$ev->{'project'}"};
+        next unless $watch{"package/$ev->{'project'}/$ev->{'package'}"} || $watch{"package/$ev->{'project'}"} || $cgi->{'alltypes'};
       } elsif ($ev->{'type'} eq 'project') {
-        next unless $watch{"project/$ev->{'project'}"};
+        next unless $watch{"project/$ev->{'project'}"} || $cgi->{'alltypes'};
       } elsif ($ev->{'type'} eq 'repository') {
-        next unless $watch{"repository/$ev->{'project'}/$ev->{'repository'}/$ev->{'arch'}"};
+        next unless $watch{"repository/$ev->{'project'}/$ev->{'repository'}/$ev->{'arch'}"} || $cgi->{'alltypes'};
       } else {
-	next;
+	next unless $cgi->{'alltypes'};
       }
       push @events, $ev;
     }
@@ -4258,10 +4259,10 @@ my $dispatches = [
   '/getsignkey $project withpubkey:bool?' => \&getsignkey,
   '/getbinaries $project $repository $arch binaries: nometa:bool?' => \&worker_getbinaries,
   '/getbinaryversions $project $repository $arch binaries: nometa:bool?' => \&worker_getbinaryversions,
-  '/lastevents $filter:* start:num? obsname:?' => \&worker_lastevents,
+  '/lastevents $filter:* start:num? obsname:? alltypes:bool?' => \&worker_lastevents,
   '/event type: project: package:? repository:? arch:? job:?' => \&newevent,
   # tmp until lightty gets fixed
-  '/public/lastevents $filter:* start:num? obsname:?' => \&worker_lastevents,
+  '/public/lastevents $filter:* start:num? obsname:? alltypes:bool?' => \&worker_lastevents,
 
   # search interface
   '/search $in: $match: return:? values:bool?' => \&search,
@@ -4317,7 +4318,7 @@ my $dispatches_ajax = [
   '/build/$project/$repository/$arch/$package/_log nostream:bool? start:intnum? end:num?' => \&getlogfile,
   '/build/$project/$repository/$arch/$package_repository view:? binary:filename* nometa:bool?' => \&getbinarylist,
   '/getbinaries $project $repository $arch binaries: nometa:bool? raw:bool?' => \&worker_getbinaries,
-  '/lastevents $filter:* start:num? obsname:?' => \&worker_lastevents,
+  '/lastevents $filter:* start:num? obsname:? alltypes:bool?' => \&worker_lastevents,
 ];
 
 ####################################################################
