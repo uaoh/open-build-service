@@ -517,12 +517,25 @@ module UserMixins
               count = 0
               
               max_ldap_attempts = defined?( LDAP_MAX_ATTEMPTS ) ? LDAP_MAX_ATTEMPTS : 10
-              
+
+              port = defined?( LDAP_PORT ) ? LDAP_PORT : 
+                ( defined?( LDAP_SSL ) && LDAP_SSL == :on ? 636 : 389 )
+
               while !ping and count < max_ldap_attempts
                 count += 1
                 server = ldap_servers[rand(ldap_servers.length)]
-                # Ruby only contains TCP echo ping.  Use system ping for real ICMP ping.
-                ping = system("ping -c 1 #{server} >/dev/null 2>/dev/null")
+                # Try to connect to the ldap port on the chosen server
+                begin
+                  Timeout::timeout(0.2) do
+                    beginPSocket.new(ip, port)
+                    s.close
+                    break
+                  rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH
+                    continue
+                  end
+                rescue Timeout::Error
+                  continue
+                end
               end
               
               if count == max_ldap_attempts
