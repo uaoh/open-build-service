@@ -90,12 +90,29 @@ sub _workin {
   }
 }
 
+# Prepare a table of forbidden control codes http://www.w3.org/TR/REC-xml/#charsets
+# Control characters are actually only permitted in XML1.1 as character references :
+# http://www.w3.org/TR/xml11/#dt-charref
+our $XML_forbidden;
+for my $c (0x01..0x1F) {
+  next if $c == 0x9 or $c == 0xA or $c == 0xD;
+  $XML_forbidden .= chr($c);
+}
+
 sub _escape {
   my ($d) = @_;
   $d =~ s/&/&amp;/sg;
   $d =~ s/</&lt;/sg;
   $d =~ s/>/&gt;/sg;
   $d =~ s/"/&quot;/sg;
+  $d =~ tr/$XML_forbidden//;
+  return $d;
+}
+
+our %unescapes = reverse %escapes;
+sub _unescape_charref {
+  my ($d) = @_;
+  $d =~ s/(&#[0-9A-F];)/$unescapes{$1}/sg;
   return $d;
 }
 
