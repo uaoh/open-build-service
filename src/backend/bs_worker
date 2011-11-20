@@ -134,7 +134,7 @@ sub commitstate {
 
 sub trunc_logfile {
   my $lf = shift;
-  open(LF, "<$lf") || return; 
+  open(LF, "<$lf") || return;
   my $buf;
   sysread(LF, $buf, 1000000);
   $buf .= "\n\n[truncated]\n\n";
@@ -142,15 +142,30 @@ sub trunc_logfile {
   sysread(LF, $buf, 1000000, length($buf));
   close LF;
   $buf .= "\nLogfile got too big, killed job.\n";
-  open(LF, ">$lf.new") || return; 
+  open(LF, ">$lf.new") || return;
   syswrite(LF, $buf);
   close LF;
   rename("$lf.new", $lf);
 }
 
+sub is_mounted {
+    # A mountpoint has a different stat[0] to parent
+    my $pnt = $_[0];
+    return ((stat $pnt)[0] != (stat "$pnt/..")[0]);
+}
+
 sub cleanup_job {
   if ($vm_tmpfs_mode) {
-    qsystem("umount", $buildroot) && die("umount tmpfs failed: $!\n");
+    if ( ! is_mounted($buildroot) ) {
+          warn("Buildroot $buildroot wasn't mounted\n");
+          return;
+      }
+    my ($res, $retry) = (1, 5);
+    while ($retry-- && $res) {
+      $res = qsystem("umount", $buildroot) && sleep 2;
+      warn("umount tmpfs $buildroot failed: $!\nRetrying\n") if $res;
+    }
+    die("umount tmpfs failed after 5 attempts: $!\n") if $res;
   }
 }
 
@@ -179,7 +194,7 @@ Usage: $0 [OPTION] --root <directory> --statedir <directory>
        --reposerver: define reposerver, can be used multiple times
 
        --arch      : define hostarch (overrides 'uname -m')
-                     currently supported architectures: 
+                     currently supported architectures:
                      @{[sort keys %cando]}
 
        --kvm       : enable kvm
@@ -714,9 +729,9 @@ sub qsystem {
     $SIG{'PIPE'} = 'DEFAULT';
     open(STDOUT, ">/dev/null") if $silent;
     exec(@args);
-    die("$args[0]: $!\n"); 
+    die("$args[0]: $!\n");
   }
-  waitpid($pid, 0) == $pid || die("waitpid $pid: $!\n"); 
+  waitpid($pid, 0) == $pid || die("waitpid $pid: $!\n");
   return $?;
 }
 
@@ -1186,7 +1201,7 @@ sub getbinaries_kiwiproduct {
   my @meta;
   for (sort keys %meta) {
     push @meta, "$meta{$_}  $_";
-  } 
+  }
   return @meta;
 }
 
@@ -1427,7 +1442,7 @@ sub dobuild {
 
   my @lt = localtime(time());
   my $timestring = sprintf "%04d-%02d-%02d %02d:%02d:%02d", $lt[5] + 1900, $lt[4] + 1, @lt[3,2,1,0];
-  
+
   print "$timestring: building '$packid' for project '$projid' repository '$repoid' arch '$arch'";
   print " using helper $helper" if $helper;
   print "\n";
@@ -1522,7 +1537,7 @@ sub dobuild {
   push @args, "$statedir/build/build";
   if ($vm =~ /(xen|kvm)/) {
     # add a bit delay - not all workers should start at the same time after idle.
-    sleep (int(rand(5)) + 1); 
+    sleep (int(rand(5)) + 1);
     mkdir("$buildroot/.mount") unless -d "$buildroot/.mount";
     push @args, '--root', "$buildroot/.mount";
     push @args, $vm, "$vm_root";
