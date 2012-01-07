@@ -4552,6 +4552,7 @@ sub copyproject {
 	  push @args, "opackage=$packid"; # same package name
 	  push @args, "orepository=$repo->{'name'}"; # same repo name
 	  push @args, 'resign=1' if $cgi->{'resign'};
+	  push @args, 'norebuild=1' if (defined($cgi->{'withbinaries'}) && $cgi->{'withbinaries'});
 	  my $param = {
 	    'uri' => "$BSConfig::reposerver/build/$projid/$repo->{'name'}/$arch/$packid",
 	    'request' => 'POST',
