@@ -1458,6 +1458,19 @@ sub copybuild {
       link("$odir/$bin", "$dir/$bin") || die("link $odir/$bin $dir/$bin: $!\n");
     }
   }
+  
+  if (defined($cgi->{'norebuild'}) && $cgi->{'norebuild'}) {
+    use File::Copy;
+    my $pdir = "$reporoot/$projid/$repoid/$arch/$packid";
+    my $mpdir = "$reporoot/$projid/$repoid/$arch/:meta";
+    my $modir = "$reporoot/$oprojid/$orepoid/$arch/:meta";
+    mkdir_p($pdir);
+    mkdir_p($mpdir);
+    copy("$odir/status", "$pdir/status") || die("copy $odir/status $pdir/status: $!\n");
+    copy("$odir/logfile", "$pdir/logfile") || die("copy $odir/logfile $pdir/logfile: $!\n");
+    copy("$modir/$opackid", "$mpdir/$packid") || die("copy $modir/$opackid $mpdir/$packid: $!\n");
+  }
+
   my $info = {
     'project' => $projid,
     'repository' => $repoid,
@@ -2974,7 +2987,7 @@ my $dispatches = [
   '/build/$project/$repository/$arch/_jobhistory package* code:* limit:num?' => \&getjobhistory,
   'POST:/build/$project/$repository/$arch/_relsync' => \&postrelsync,
   '/build/$project/$repository/$arch/_relsync' => \&getrelsync,
-  'POST:/build/$project/$repository/$arch/$package cmd=copy oproject:project? opackage:package? orepository:repository? setupdateinfoid:? resign:bool?' => \&copybuild,
+  'POST:/build/$project/$repository/$arch/$package cmd=copy oproject:project? opackage:package? orepository:repository? setupdateinfoid:? resign:bool? norebuild:bool?' => \&copybuild,
   'POST:/build/$project/$repository/$arch/$package' => \&uploadbuild,
   '!worker,rw /build/$project/$repository/$arch/$package:package_repository view:? binary:filename* nometa:bool? noajax:bool?' => \&getbinarylist,
   'POST:/build/$project/$repository/$arch/$package_repository/_buildinfo add:* internal:bool? debug:bool? deps:bool?' => \&getbuildinfo_post,
