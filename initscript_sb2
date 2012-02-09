@@ -1,0 +1,22 @@
+#!/bin/bash
+ABUILD_UID=399
+ABUILD_GID=399
+
+echo "Setting up abuild user in $BUILD_ROOT for SB2"
+echo "abuild::${ABUILD_UID}:${ABUILD_GID}:Autobuild:/home/abuild:/bin/bash" >> /etc/passwd
+echo 'abuild:*:::::::' >>/etc/shadow # This is needed on Mandriva 2009
+echo 'abuild:*::' >>/etc/gshadow # This is needed on Ubuntu
+echo "abuild::${ABUILD_GID}:" >>/etc/group
+mkdir -p /target /home/abuild
+chmod 775 /target
+chown -R "$ABUILD_UID:$ABUILD_GID" /target /home/abuild
+if [ -e /home/abuild/sb2-session-needroot ]; then
+	rm -rf /home/abuild/sb2-session-needroot
+fi
+if [ -e /home/abuild/sb2-session-needuser ]; then
+	rm -rf /home/abuild/sb2-session-needuser
+fi
+if [ -e /target/.sb2inited ]; then
+	rm -rf /target/.sb2inited
+fi
+/bin/bash /.build/build
