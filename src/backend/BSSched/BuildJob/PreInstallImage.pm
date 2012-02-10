@@ -95,7 +95,8 @@ sub check {
   }
   my @pdeps = Build::get_preinstalls($bconf);
   my @vmdeps = Build::get_vminstalls($bconf);
-  @bdeps = BSUtil::unify(@pdeps, @vmdeps, @bdeps);
+  my @sb2deps = Build::get_sb2installs($bconf);
+  @bdeps = BSUtil::unify(@pdeps, @vmdeps, @sb2deps, @bdeps);
 
   # create meta
   my $pool = $ctx->{'pool'};

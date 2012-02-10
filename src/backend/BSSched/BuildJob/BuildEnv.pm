@@ -129,6 +129,7 @@ sub build {
   # fill in missing data
   my %pdeps = map {$_ => 1}  Build::get_preinstalls($bconf);
   my %vmdeps = map {$_ => 1} Build::get_vminstalls($bconf);
+  my %sb2deps = map {$_ => 1} Build::get_sb2installs($bconf);
   my %runscripts = map {$_ => 1} Build::get_runscripts($bconf);
   for (@bdeps) {
     $_->{'name'} =~ s/\.rpm$//;	# workaround bug in buildenv generation
@@ -155,6 +156,7 @@ sub build {
     $_->{'notmeta'}    = 1;
     $_->{'preinstall'} = 1 if $pdeps{$_->{'name'}};
     $_->{'vminstall'}  = 1 if $vmdeps{$_->{'name'}};
+    $_->{'sb2install'}  = 1 if $sb2deps{$_->{'name'}};
     $_->{'runscripts'} = 1 if $runscripts{$_->{'name'}};
   }
   $ctx->{'extrabdeps'} = \@bdeps;

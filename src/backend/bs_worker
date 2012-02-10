@@ -2447,17 +2447,19 @@ sub readbuildenv {
     $buildinfo->{'outbuildinfo'}->{$_} = $bi->{$_} if $buildinfo->{'outbuildinfo'} && defined $bi->{$_};
   }
   if (!grep {$_->{'preinstall'}} @{$buildinfo->{'bdep'} || []}) {
-    # fixup preinstall/vminstall...
+    # fixup preinstall/vminstall/sb2install...
     importbuild() unless defined &Build::queryhdrmd5;
     my $server = $buildinfo->{'srcserver'} || $srcserver;
     my $bconf = BSRPC::rpc("$server/getconfig", undef, "project=$buildinfo->{'project'}", "repository=$buildinfo->{'repository'}");
     $bconf = Build::read_config($buildinfo->{'arch'}, [ split("\n", $bconf) ]);
     my %pdeps = map {$_ => 1} Build::get_preinstalls($bconf);
     my %vmdeps = map {$_ => 1} Build::get_vminstalls($bconf);
+    my %sb2deps = map {$_ => 1} Build::get_sb2installs($bconf);
     my %runscripts = map {$_ => 1} Build::get_runscripts($bconf);
     for (@{$buildinfo->{'bdep'} || []}) {
       $_->{'preinstall'} = 1 if $pdeps{$_->{'name'}};
       $_->{'vminstall'} = 1 if $vmdeps{$_->{'name'}};
+      $_->{'sb2install'} = 1 if $sb2deps{$_->{'name'}};
       $_->{'runscripts'} = 1 if $runscripts{$_->{'name'}};
     }
   }
@@ -2914,6 +2916,9 @@ sub dobuild {
   if (!$kiwimode) {
     push @rpmlist, "noinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'noinstall'}} @bdep);
     push @rpmlist, "installonly: ".join(' ', map {$_->{'name'}} grep {$_->{'installonly'}} @bdep);
+  }
+  if (grep {$_->{'sb2install'}} @bdep) {
+    push @rpmlist, "sb2install: ".join(' ', map {$_->{'name'}} grep {$_->{'sb2install'}} @bdep);
   }
   writestr("$buildroot/.build.rpmlist", undef, join("\n", @rpmlist)."\n");
 

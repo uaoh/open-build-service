@@ -106,15 +106,18 @@ sub build {
   my $now = time();
   my @pdeps = Build::get_preinstalls($bconf);
   my @vmdeps = Build::get_vminstalls($bconf);
+  my @sb2deps = Build::get_sb2installs($bconf);
   my %runscripts = map {$_ => 1} Build::get_runscripts($bconf);
   my %bdeps = map {$_ => 1} @bdeps;
   my %pdeps = map {$_ => 1} @pdeps;
   my %vmdeps = map {$_ => 1} @vmdeps;
-  @bdeps = BSUtil::unify(@pdeps, @vmdeps, @bdeps);
+  my %sb2deps = map {$_ => 1} @sb2deps;
+  @bdeps = BSUtil::unify(@pdeps, @vmdeps, @sb2deps, @bdeps);
   for (@bdeps) {
     $_ = {'name' => $_};
     $_->{'preinstall'} = 1 if $pdeps{$_->{'name'}};
     $_->{'vminstall'} = 1 if $vmdeps{$_->{'name'}};
+    $_->{'sb2install'} = 1 if $sb2deps{$_->{'name'}};
     $_->{'runscripts'} = 1 if $runscripts{$_->{'name'}};
     $_->{'notmeta'} = 1;
   }

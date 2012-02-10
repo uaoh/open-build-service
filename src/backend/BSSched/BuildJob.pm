@@ -954,15 +954,16 @@ sub create {
   my $pool = $ctx->{'pool'};
   my @pdeps = Build::get_preinstalls($bconf);
   my @vmdeps = Build::get_vminstalls($bconf);
+  my @sb2deps = Build::get_sb2installs($bconf);
 
   # do DoD checking
   if (!$ctx->{'isreposerver'} && $BSConfig::enable_download_on_demand) {
     my $dods;
     if ($kiwimode) {
       # image packages are already checked (they come from a different pool anyway)
-      $dods = BSSched::DoD::dodcheck($ctx, $pool, $myarch, @pdeps, @vmdeps, @sysdeps);
+      $dods = BSSched::DoD::dodcheck($ctx, $pool, $myarch, @pdeps, @vmdeps, @sb2deps, @sysdeps);
     } else {
-      $dods = BSSched::DoD::dodcheck($ctx, $pool, $myarch, @pdeps, @vmdeps, @bdeps, @sysdeps);
+      $dods = BSSched::DoD::dodcheck($ctx, $pool, $myarch, @pdeps, @vmdeps, @sb2deps, @bdeps, @sysdeps);
     }
     if ($dods) {
       print "        blocked: $dods\n" if $ctx->{'verbose'};
@@ -970,11 +971,11 @@ sub create {
     }
   }
 
-  # make sure we have the preinstalls and vminstalls
-  my @missing = grep {!$ctx->{'dep2pkg'}->{$_}} (@pdeps, @vmdeps);
+  # make sure we have the preinstalls, vminstalls and sb2installs
+  my @missing = grep {!$ctx->{'dep2pkg'}->{$_}} (@pdeps, @vmdeps, @sb2deps);
   if (@missing) {
     @missing = sort(BSUtil::unify(@missing));
-    return ('unresolvable', "missing pre/vminstalls: ".join(', ', @missing));
+    return ('unresolvable', "missing pre/vminstalls/sb2installs: ".join(', ', @missing));
   }
 
   # kill those ancient other jobs
@@ -991,21 +992,24 @@ sub create {
   my %bdeps = map {$_ => 1} @bdeps;
   my %pdeps = map {$_ => 1} @pdeps;
   my %vmdeps = map {$_ => 1} @vmdeps;
+  my %sb2deps = map {$_ => 1} @sb2deps;
   my %edeps = map {$_ => 1} @$edeps;
   my %sysdeps = map {$_ => 1} @sysdeps;
 
   my $needextradata = $dobuildinfo || $ctx->{'unorderedrepos'};
-  @bdeps = BSUtil::unify(@pdeps, @vmdeps, @$edeps, @bdeps, @sysdeps);
+  @bdeps = BSUtil::unify(@pdeps, @vmdeps, @sb2deps, @$edeps, @bdeps, @sysdeps);
   @bdeps = () if $buildtype eq 'buildenv';
   for (@bdeps) {
     my $n = $_;
     $_ = {'name' => $_};
     $_->{'preinstall'} = 1 if $pdeps{$n};
     $_->{'vminstall'} = 1 if $vmdeps{$n};
+    $_->{'sb2install'} = 1 if $sb2deps{$n};
     $_->{'runscripts'} = 1 if $runscripts{$n};
     $_->{'notmeta'} = 1 unless $edeps{$n};
     if (@sysdeps) {
       $_->{'installonly'} = 1 if $sysdeps{$n} && !$bdeps{$n} && !$kiwimode;
+      # MER: should this check sb2deps too??
       $_->{'noinstall'} = 1 if $bdeps{$n} && !($sysdeps{$n} || $vmdeps{$n} || $pdeps{$n});
     }
     if ($needextradata) {
