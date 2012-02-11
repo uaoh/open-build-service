@@ -123,6 +123,18 @@ cleanup_sb2() {
 	fi
 }
 
+shellquote()
+{
+    for arg; do
+	arg=${arg/\\/\\\\}
+	arg=${arg/\$/\\\$}
+	arg=${arg/\"/\\\"}
+	arg=${arg/\`/\\\`}
+	echo -n " \"$arg\""
+    done
+}
+
+
 # chroot-like wrapper, enter_target <mode: needroot|user> $TARGET commands
 # needroot - operations that need to be done as root, like unpacking into file system, etc
 # needuser - operations that will be done as non-root user
@@ -131,15 +143,16 @@ enter_target() {
 	if [ -z "$BUILD_SB2FLAGS" ]; then
 		if [ x$1 == xneeduser ]; then
 			shift
-			chroot $BUILD_TARGET su -c "${*}" - $BUILD_USER
+			PARAMS=`shellquote "$@"`
+			chroot $BUILD_TARGET su -c "$PARAMS" - $BUILD_USER
 		elif [ x$1 == xneedscript ]; then
 			shift
 			SCRIPT=$1
 			shift
-			chroot $BUILD_TARGET su -s $SCRIPT $BUILD_USER -- ${*}
+			chroot $BUILD_TARGET su -s $SCRIPT $BUILD_USER -- "$@"
 		else
 			shift
-			chroot $BUILD_TARGET ${*}
+			chroot $BUILD_TARGET "$@"
 		fi			
 	else
 		if [ -z "$VM_TYPE" ]; then
@@ -175,7 +188,8 @@ enter_target() {
         		        fi
 				su -c "cd $PWD; /usr/bin/sb2-config -t oscbuild setenv HOME /root" - abuild
 	  	                su -c "cd $PWD; /usr/bin/sb2-config -t oscbuild setenv USER root" - abuild
-				su -c "cd $PWD; /usr/bin/sb2 $SESSION $SB2_DEBUG -m $SB2_INSTALLMODE -R ${*}" - abuild
+	  	                PARAMS=`shellquote "$@"`
+				su -c "cd $PWD; /usr/bin/sb2 $SESSION $SB2_DEBUG -m $SB2_INSTALLMODE -R $PARAMS" - abuild
 				RET=$?
 				cd $ORIG
 				return $RET
@@ -190,9 +204,11 @@ enter_target() {
 			        else
         			       	SESSION="-J /home/abuild/sb2-session-needuser"
         		        fi
+        		        PARAMS=`shellquote "$@"`
+
 				su -c "cd $PWD; /usr/bin/sb2-config -t oscbuild setenv HOME /home/abuild" - abuild
 	  	                su -c "cd $PWD; /usr/bin/sb2-config -t oscbuild setenv USER abuild" - abuild
-				su -c "cd $PWD; /usr/bin/sb2 $SESSION $SB2_DEBUG -m $SB2_DEFAULTMODE ${*}" - abuild
+				su -c "cd $PWD; /usr/bin/sb2 $SESSION $SB2_DEBUG -m $SB2_DEFAULTMODE $PARAMS" - abuild
 				RET=$?
 				cd $ORIG
 				return $RET
