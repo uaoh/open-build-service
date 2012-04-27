@@ -1352,53 +1352,74 @@ class User < ActiveRecord::Base
   # and password
   def self.initialize_ldap_con(user_name, password)
     return nil unless defined?( LDAP_SERVERS )
-    ldap_servers = LDAP_SERVERS.split(":")
-    ping = false
-    server = nil
-    count = 0
-    
-    max_ldap_attempts = defined?( LDAP_MAX_ATTEMPTS ) ? LDAP_MAX_ATTEMPTS : 10
-    
-    while !ping and count < max_ldap_attempts
-      count += 1
-      server = ldap_servers[rand(ldap_servers.length)]
-      # Ruby only contains TCP echo ping.  Use system ping for real ICMP ping.
-      ping = system("ping -c 1 #{server} >/dev/null 2>/dev/null")
-    end
-    
-    if count == max_ldap_attempts
-      logger.debug("Unable to ping to any LDAP server: #{LDAP_SERVERS}")
-      return nil
+
+    if RUBY_VERSION.split(".")[1] == "8"
+      begin
+        require 'rubygems'
+        require 'system_timer'
+        Timer = SystemTimer
+      rescue LoadError
+        logger.warn( "Using builtin Timeout on ruby-1.8 is NOT going to work. Please install rubygem-system_timer." )
+        require 'timeout'
+        Timer = Timeout
+      end
+    else
+      require 'timeout'
+      Timer = Timeout
     end
 
-    logger.debug( "Connecting to #{server} as '#{user_name}'" )
-    begin
-      if defined?( LDAP_SSL ) && LDAP_SSL == :on
-        port = defined?( LDAP_PORT ) ? LDAP_PORT : 636
-        conn = LDAP::SSLConn.new( server, port)
-      else
-        port = defined?( LDAP_PORT ) ? LDAP_PORT : 389
-        # Use LDAP StartTLS. By default start_tls is off.
-        if defined?( LDAP_START_TLS ) && LDAP_START_TLS == :on
-          conn = LDAP::SSLConn.new( server, port, true)
+    ldap_servers = LDAP_SERVERS.split(":")
+    server = nil
+    count = 0
+
+    max_ldap_attempts = defined?( LDAP_MAX_ATTEMPTS ) ? LDAP_MAX_ATTEMPTS : ldap_servers.length
+    
+    while count < max_ldap_attempts
+      count += 1
+      server = ldap_servers[rand(ldap_servers.length)]
+      #ldap_servers.delete(server)
+    
+      logger.debug( "Connecting to #{server} as '#{user_name}'" )
+      begin
+        if defined?( LDAP_SSL ) && LDAP_SSL == :on
+          port = defined?( LDAP_PORT ) ? LDAP_PORT : 636
+          conn = LDAP::SSLConn.new( server, port)
         else
-          conn = LDAP::Conn.new( server, port)
+          port = defined?( LDAP_PORT ) ? LDAP_PORT : 389
+          # Use LDAP StartTLS. By default start_tls is off.
+          if defined?( LDAP_START_TLS ) && LDAP_START_TLS == :on
+            conn = LDAP::SSLConn.new( server, port, true)
+          else
+            conn = LDAP::Conn.new( server, port)
+          end
         end
+        conn.set_option(LDAP::LDAP_OPT_PROTOCOL_VERSION, 3)
+        if defined?( LDAP_REFERRALS ) && LDAP_REFERRALS == :off
+          conn.set_option(LDAP::LDAP_OPT_REFERRALS, LDAP::LDAP_OPT_OFF)
+        end
+        begin
+          Timer.timeout(5) do
+            conn.bind(user_name, password)
+          end
+        rescue Timeout::Error
+          logger.debug( "Timeout error while binding to #{server} as '#{user_name}" )
+          if count == max_ldap_attempts
+            logger.debug( "Unable to contact any LDAP server: #{LDAP_SERVERS}" )
+            return nil
+          end
+          next
+        end
+
+      rescue LDAP::ResultError
+        logger.debug( "Error #{conn.err}: #{conn.err2string(conn.err)} for #{user_name}" )
+        if not conn.nil?
+          conn.unbind()
+        end
+        return nil
       end
-      conn.set_option(LDAP::LDAP_OPT_PROTOCOL_VERSION, 3)
-      if defined?( LDAP_REFERRALS ) && LDAP_REFERRALS == :off
-        conn.set_option(LDAP::LDAP_OPT_REFERRALS, LDAP::LDAP_OPT_OFF)
-      end
-      conn.bind(user_name, password)
-    rescue LDAP::ResultError
-      if not conn.nil?
-        conn.unbind()
-      end
-      logger.debug( "Not bound:  error #{conn.err} for #{user_name}" )
-      return nil
+      logger.debug( "Bound as #{user_name}" )
+      return conn
     end
-    logger.debug( "Bound as #{user_name}" )
-    return conn
   end
 
 end
