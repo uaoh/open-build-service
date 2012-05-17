@@ -1210,7 +1210,7 @@ class SourceController < ApplicationController
       User.current = User.find_by_login(params[:user])
     end
 
-    if params[:withbinaries]
+    if params[:withbinaries] && false
       prj = DbProject.get_by_name( tproject )
       old_build_flags = Array.new
       prj.flags.each do |f|
@@ -1218,7 +1218,7 @@ class SourceController < ApplicationController
       end
       prj.flags.delete(old_build_flags)
       prj.add_flag("build", "disable", nil, Nil)
-      logger.debug "################ COPY store #{tproject}\n"
+      logger.debug "################ COPY store #{tproject} with build=disable\n"
       prj.store
     end
     begin
@@ -1236,7 +1236,7 @@ class SourceController < ApplicationController
       Package.new(backend_get(path), :project => tproject).save
       DbPackage.find_by_project_and_name(tproject, package.name).sources_changed
     end
-    if params[:withbinaries]
+    if params[:withbinaries] && false
       # re-get as this could take a while ?
       prj = DbProject.get_by_name( tproject )
       prj.flags.each do |f|
@@ -1246,8 +1246,8 @@ class SourceController < ApplicationController
         prj.add_flag(f.flag, f.status, f.repo, f.architecture)
       end
     end
-    if params[:withbinaries]
-      logger.debug "################ COPY saving #{tproject} xml\n"
+    if params[:withbinaries] && false
+      logger.debug "################ COPY saving #{tproject} xml with normal build flags\n"
       prj.store
     end
   end

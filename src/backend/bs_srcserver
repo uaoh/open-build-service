@@ -4458,10 +4458,14 @@ sub copyproject {
   $user = str2utf8xml($user);
   $comment = str2utf8xml($comment);
 
+  print "################################ COPYPROJECT $projid\n";
+
   # use {} as we do not want to copy project linked packages
   my @pkgs = findpackages($oprojid, {});
   for my $packid (@pkgs) {
+    print "###################### Doing $packid\n";
     if (! -e "$projectsdir/$projid.pkg/$packid.xml") {
+      print "################ make $projectsdir/$projid.pkg/$packid.xml\n";
       # new package, create. hopefully the API can deal with this
       my $opack = readpack($oprojid, $packid);
       my $pack = {
@@ -4474,11 +4478,9 @@ sub copyproject {
       mkdir_p($uploaddir);
       writexml("$uploaddir/copyproject$$", undef, $pack, $BSXML::pack);
       addrev_meta($cgi, $projid, $packid, "$uploaddir/copyproject$$", "$projectsdir/$projid.pkg/$packid.xml", '_meta');
-      # need to do this now because the binary copy will fail otherwise
-      notify_repservers('package', $projid, $packid) if $cgi->{'withbinaries'};
     }
     if ($cgi->{'makeolder'} || -s "$projectsdir/$oprojid.pkg/$packid.rev") {
-      print "################ copy src\n";
+      print "################ copy src for $packid\n";
       my $lastorev;
       if ($cgi->{'withhistory'}) {
 	# FIXME: races ahead
@@ -4513,35 +4515,42 @@ sub copyproject {
 	# fake empty commit
 	$lastorev = { 'version' => 'unknown', 'rev' => 0, 'vrev' => 0, 'srcmd5' => $emptysrcmd5 };
       }
-      # always do one new commit, we don't use addrev to have full control over vrev
-      my $files = lsrev({ %$lastorev, 'project' => $oprojid, 'package' => $packid });
-      copyfiles($projid, $packid, $oprojid, $packid, $files);
-      addmeta($projid, $packid, $files);
-      my $newrev = { %$lastorev };
-      $newrev->{'user'} = $user;
-      $newrev->{'comment'} = $comment;
-      $newrev->{'requestid'} = $cgi->{'requestid'};
-      $newrev->{'time'} = time();
-      if ($cgi->{'makeolder'}) {
-	$newrev->{'vrev'} =~ s/(\d+)$/($1+1).".1"/e;
-      } else {
-	$newrev->{'vrev'} =~ s/(\d+)$/$1+1/e;
-      }
-      delete $newrev->{'rev'};
-      $newrev = BSFileDB::fdb_add_i("$projectsdir/$projid.pkg/$packid.rev", $srcrevlay, $newrev);
-      updatelinkinfodb($projid, $packid, { %$newrev, 'project' => $oprojid, 'package' => $packid }, $files);
-      if ($cgi->{'makeolder'}) {
-	$lastorev->{'user'} = $user;
-	$lastorev->{'comment'} = $comment;
-	$lastorev->{'requestid'} = $cgi->{'requestid'};
-	$lastorev->{'time'} = time();
-	$lastorev->{'vrev'} =~ s/(\d+)$/$1+2/e;
-	delete $lastorev->{'rev'};
-	$lastorev = BSFileDB::fdb_add_i("$projectsdir/$oprojid.pkg/$packid.rev", $srcrevlay, $lastorev);
+
+      if (not $cgi->{'withbinaries'}) {
+	# always do one new commit, we don't use addrev to have full control over vrev
+	my $files = lsrev({ %$lastorev, 'project' => $oprojid, 'package' => $packid });
+	copyfiles($projid, $packid, $oprojid, $packid, $files);
+	addmeta($projid, $packid, $files);
+	my $newrev = { %$lastorev };
+	$newrev->{'user'} = $user;
+	$newrev->{'comment'} = $comment;
+	$newrev->{'requestid'} = $cgi->{'requestid'};
+	$newrev->{'time'} = time();
+	if ($cgi->{'makeolder'}) {
+	  $newrev->{'vrev'} =~ s/(\d+)$/($1+1).".1"/e;
+	} else {
+	  $newrev->{'vrev'} =~ s/(\d+)$/$1+1/e;
+	}
+	delete $newrev->{'rev'};
+	$newrev = BSFileDB::fdb_add_i("$projectsdir/$projid.pkg/$packid.rev", $srcrevlay, $newrev);
+	updatelinkinfodb($projid, $packid, { %$newrev, 'project' => $oprojid, 'package' => $packid }, $files);
+	if ($cgi->{'makeolder'}) {
+	  $lastorev->{'user'} = $user;
+	  $lastorev->{'comment'} = $comment;
+	  $lastorev->{'requestid'} = $cgi->{'requestid'};
+	  $lastorev->{'time'} = time();
+	  $lastorev->{'vrev'} =~ s/(\d+)$/$1+2/e;
+	  delete $lastorev->{'rev'};
+	  $lastorev = BSFileDB::fdb_add_i("$projectsdir/$oprojid.pkg/$packid.rev", $srcrevlay, $lastorev);
+	}
       }
     }
     # XXX: does this make any sense?
     if ($cgi->{'withbinaries'}) {
+      print "################### Notify repo for $packid copy\n";
+      # need to do this now because the binary copy will fail otherwise
+      notify_repservers('package', $projid, $packid);
+
       print "################### With binaries copy\n";
       for my $repo (@{$proj->{'repository'} || []}) {
 	my $orepo = (grep {$_->{'name'} eq $repo->{'name'}} @{$oproj->{'repository'} || []})[0];
@@ -4561,6 +4570,7 @@ sub copyproject {
 	    'uri' => "$BSConfig::reposerver/build/$projid/$repo->{'name'}/$arch/$packid",
 	    'request' => 'POST',
 	  };
+	  print "################### Notify repo to copy $repo->{'name'}/$arch copy\n";
 	  eval {
 	    # ignore failures for now
 	    BSWatcher::rpc($param, undef, @args);
