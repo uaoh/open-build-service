@@ -1217,7 +1217,7 @@ class SourceController < ApplicationController
         old_build_flags << f
       end
       prj.flags.delete(old_build_flags)
-      prj.add_flag("build", "disable", 0, :nil)
+      prj.add_flag("build", "disable", nil, Nil)
       logger.debug "################ COPY store #{tproject}\n"
       prj.store
     end
@@ -1240,7 +1240,7 @@ class SourceController < ApplicationController
       # re-get as this could take a while ?
       prj = DbProject.get_by_name( tproject )
       prj.flags.each do |f|
-        prj.remove_flag(f)
+        prj.flags.delete(f)
       end
       old_build_flags.each do |f|
         prj.add_flag(f.flag, f.status, f.repo, f.architecture)
