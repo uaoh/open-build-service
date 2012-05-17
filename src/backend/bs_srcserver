@@ -2897,6 +2897,12 @@ sub delproject {
           }
         }
         unlink("$projectsdir/$projid.pkg/$f");
+	# Stash per-project trees pending undelete (removing any old ones)
+	if ($BSConfig::nosharedtrees) {
+	  my $deletedtrees = "$projectsdir/_deleted/${projid}_trees";
+	  system("rm -rf $deletedtrees") if -e $deletedtrees;
+	  rename("$treesdir/$projid", $deletedtrees);
+	}
       }
       rmdir("$projectsdir/$projid.pkg") || die("rmdir $projectsdir/$projid.pkg: $!\n");
     }
@@ -2939,6 +2945,9 @@ sub undeleteproject {
       }
     }
   }
+  # Restore any trees
+  rename("$projectsdir/_deleted/${projid}_trees", "$treesdir/$projid")
+    if -e "$projectsdir/_deleted/${projid}_trees" && $BSConfig::nosharedtrees;
   notify_repservers('project', $projid);
   BSNotify::notify("SRCSRV_UNDELETE_PROJECT", { "project" => $projid, "comment" => $cgi->{'comment'}, "sender" => ($cgi->{'user'} || "unknown") });
 
@@ -4469,6 +4478,7 @@ sub copyproject {
       notify_repservers('package', $projid, $packid) if $cgi->{'withbinaries'};
     }
     if ($cgi->{'makeolder'} || -s "$projectsdir/$oprojid.pkg/$packid.rev") {
+      print "################ copy src\n";
       my $lastorev;
       if ($cgi->{'withhistory'}) {
 	# FIXME: races ahead
@@ -4532,6 +4542,7 @@ sub copyproject {
     }
     # XXX: does this make any sense?
     if ($cgi->{'withbinaries'}) {
+      print "################### With binaries copy\n";
       for my $repo (@{$proj->{'repository'} || []}) {
 	my $orepo = (grep {$_->{'name'} eq $repo->{'name'}} @{$oproj->{'repository'} || []})[0];
 	next unless $orepo;
@@ -4555,6 +4566,11 @@ sub copyproject {
 	    BSWatcher::rpc($param, undef, @args);
 	  };
           warn($@) if $@;
+	  my $ev = {'type' => 'recheck',
+		    'project' => $projid,
+		    'repo' => $repo,
+		    'arch' => $arch};
+	  addevent($ev);
 	}
       }
     }

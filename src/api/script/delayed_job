@@ -1,6 +1,9 @@
 #!/usr/bin/ruby
 
+ENV['DELAYED_JOB_NAME']="delayed_job"
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'config', 'environment'))
+logger = Rails.logger
+logger.auto_flushing=true
 require File.join(RAILS_ROOT, 'lib/workers/copy_project_job.rb')
 require File.join(RAILS_ROOT, 'lib/workers/issue_trackers_to_backend_job.rb')
 require File.join(RAILS_ROOT, 'lib/workers/fetch_issues.rb')

@@ -215,6 +215,7 @@ class SourceController < ApplicationController
       end
 
       if 'copy' == command
+        logger.debug "################ COPY command"
         unless @http_user.can_create_project?(project_name)
           render_error :status => 403, :errorcode => "cmd_execution_no_permission",
             :message => "no permission to execute command '#{command}'"
@@ -228,6 +229,7 @@ class SourceController < ApplicationController
             return
           end
         end
+        logger.debug "################ COPY looks, good, dispatch_command"
         dispatch_command
         return
       end
@@ -263,8 +265,8 @@ class SourceController < ApplicationController
     admin_user = @http_user.is_admin?
     deleted_package = params.has_key? :deleted
     # valid post commands
-    valid_commands=['diff', 'branch', 'servicediff', 'linkdiff', 'showlinked', 'copy', 'remove_flag', 'set_flag', 
-                    'rebuild', 'undelete', 'wipe', 'runservice', 'commit', 'commitfilelist', 
+    valid_commands=['diff', 'branch', 'servicediff', 'linkdiff', 'showlinked', 'copy', 'remove_flag', 'set_flag',
+                    'rebuild', 'undelete', 'wipe', 'runservice', 'commit', 'commitfilelist',
                     'createSpecFileTemplate', 'deleteuploadrev', 'linktobranch', 'updatepatchinfo',
                     'getprojectservices', 'unlock']
     # list of commands which are allowed even when the project has the package only via a project link
@@ -347,7 +349,7 @@ class SourceController < ApplicationController
               :message => "no permission to create project #{target_project_name}"
             return
           end
-          if exists 
+          if exists
             tprj = DbProject.get_by_name(target_project_name)
             unless @http_user.can_create_package_in?(tprj)
               render_error :status => 403, :errorcode => "cmd_execution_no_permission",
@@ -368,7 +370,7 @@ class SourceController < ApplicationController
         tprj = tpkg.db_project unless tpkg.nil? # for remote package case
         if request.delete? or (request.post? and not read_commands.include? command)
           # unlock
-          if command == "unlock" 
+          if command == "unlock"
             unless @http_user.can_modify_package?(tpkg, ignoreLock=true)
               render_error :status => 403, :errorcode => "cmd_execution_no_permission",
                 :message => "no permission to unlock package #{tpkg.name} in project #{tpkg.db_project.name}"
@@ -388,7 +390,7 @@ class SourceController < ApplicationController
     if tpkg.nil? and deleted_package
       validate_read_access_of_deleted_package(target_project_name, target_package_name)
     end
-    
+
     # GET /source/:project/:package
     #------------------------------
     if request.get?
@@ -457,7 +459,7 @@ class SourceController < ApplicationController
         path = "/source/#{target_project_name}/#{target_package_name}"
         path << build_query_from_hash(params, [:user, :comment])
         Suse::Backend.delete path
-    
+
         if target_package_name == "_product"
           update_product_autopackages params[:project]
         end
@@ -720,12 +722,12 @@ class SourceController < ApplicationController
         unless @http_user.can_modify_project?(prj, ignoreLock)
           if prj.is_locked?
             logger.debug "no permission to modify LOCKED project #{prj.name}"
-            render_error :status => 403, :errorcode => "change_project_no_permission", 
+            render_error :status => 403, :errorcode => "change_project_no_permission",
               :message => "The project #{prj.name} is locked"
             return
           end
           logger.debug "user #{user.login} has no permission to modify project #{prj.name}"
-          render_error :status => 403, :errorcode => "change_project_no_permission", 
+          render_error :status => 403, :errorcode => "change_project_no_permission",
             :message => "no permission to change project"
           return
         end
@@ -902,7 +904,7 @@ class SourceController < ApplicationController
   def package_meta
     valid_http_methods :put, :get
     required_parameters :project, :package
-   
+
     project_name = params[:project]
     package_name = params[:package]
 
@@ -916,7 +918,7 @@ class SourceController < ApplicationController
       # GET /source/:project/:package/_meta
       pack = DbPackage.get_by_project_and_name( project_name, package_name, use_source=false )
 
-      if params.has_key?(:rev) or pack.nil? # and not pro_name 
+      if params.has_key?(:rev) or pack.nil? # and not pro_name
         # check if this comes from a remote project, also true for _project package
         # or if rev it specified we need to fetch the meta from the backend
         answer = Suse::Backend.get(request.path)
@@ -1005,7 +1007,7 @@ class SourceController < ApplicationController
     return unless @http_user
     params[:user] = @http_user.login
 
-    if params.has_key?(:deleted) and request.get? 
+    if params.has_key?(:deleted) and request.get?
       if DbProject.exists_by_name(project_name)
         validate_read_access_of_deleted_package(project_name, package_name)
         pass_to_backend
@@ -1024,7 +1026,7 @@ class SourceController < ApplicationController
     if package_name == "_project" or package_name == "_pattern"
       allowed = permissions.project_change? prj
     else
-      if request.get? 
+      if request.get?
         # a readable package, even on remote instance is enough here
         begin
           pack = DbPackage.get_by_project_and_name(project_name, package_name)
@@ -1202,6 +1204,23 @@ class SourceController < ApplicationController
   # called either directly or from delayed job
   def do_project_copy( tproject, params )
     # copy entire project in the backend
+    logger.debug "################ COPY do_project_copy command"
+    # set user if nil, needed for delayed job in DbPackage model
+    if User.current == nil
+      User.current = User.find_by_login(params[:user])
+    end
+
+    if params[:withbinaries]
+      prj = DbProject.get_by_name( tproject )
+      old_build_flags = Array.new
+      prj.flags.each do |f|
+        old_build_flags << f
+      end
+      prj.flags.delete(old_build_flags)
+      prj.add_flag("build", "disable", 0, :nil)
+      logger.debug "################ COPY store #{tproject}\n"
+      prj.store
+    end
     begin
       path = "/source/#{URI.escape(tproject)}"
       path << build_query_from_hash(params, [:cmd, :user, :comment, :oproject, :withbinaries, :withhistory, :makeolder])
@@ -1210,17 +1229,26 @@ class SourceController < ApplicationController
       # we need to check results of backend in any case (also timeout error eg)
     end
 
-    # set user if nil, needed for delayed job in DbPackage model
-    if User.current == nil
-      User.current = User.find_by_login(params[:user])
-    end
-
     # restore all package meta data objects in DB
     backend_pkgs = Collection.find :package, :match => "@project='#{tproject}'"
     backend_pkgs.each_package do |package|
       path = "/source/#{URI.escape(tproject)}/#{package.name}/_meta"
       Package.new(backend_get(path), :project => tproject).save
       DbPackage.find_by_project_and_name(tproject, package.name).sources_changed
+    end
+    if params[:withbinaries]
+      # re-get as this could take a while ?
+      prj = DbProject.get_by_name( tproject )
+      prj.flags.each do |f|
+        prj.remove_flag(f)
+      end
+      old_build_flags.each do |f|
+        prj.add_flag(f.flag, f.status, f.repo, f.architecture)
+      end
+    end
+    if params[:withbinaries]
+      logger.debug "################ COPY saving #{tproject} xml\n"
+      prj.store
     end
   end
 
@@ -1248,7 +1276,7 @@ class SourceController < ApplicationController
         :message => "no permission to modify project '#{prj.name}'"
       return
     end
-    
+
     # check for correct project kind
     unless prj and prj.project_type == "maintenance"
       render_error :status => 400, :errorcode => "incident_has_no_maintenance_project",
@@ -1275,7 +1303,7 @@ class SourceController < ApplicationController
           private_remove_repositories( linking_repos, true )
         end
 
-        # try to remove the repository 
+        # try to remove the repository
         # but never remove the deleted one
         unless repo == del_repo
           # permission check
@@ -1467,6 +1495,7 @@ class SourceController < ApplicationController
 
   # POST /source/<project>?cmd=copy
   def index_project_copy
+    logger.debug "################ COPY index_project_copy command"
     valid_http_methods :post
     project_name = params[:project]
     oproject = params[:oproject]
@@ -1768,7 +1797,7 @@ class SourceController < ApplicationController
     path = request.path
     path << build_query_from_hash(params, [:cmd, :user, :comment, :rev, :linkrev, :keeplink, :repairlink])
     answer = pass_to_backend path
-    
+
     pack = DbPackage.find_by_project_and_name( params[:project], params[:package] )
     if pack # in case of _project package
       pack.set_package_kind_from_commit(answer)
@@ -1785,7 +1814,7 @@ class SourceController < ApplicationController
     valid_http_methods :post
     oproject_name = params[:oproject]
     opackage_name = params[:opackage]
- 
+
     path = request.path
     path << build_query_from_hash(params, [:cmd, :rev, :orev, :oproject, :opackage, :expand ,:linkrev, :olinkrev, :unified ,:missingok, :meta, :file, :filelimit, :tarlimit, :view, :withissues, :onlyissues])
     pass_to_backend path
@@ -1946,7 +1975,7 @@ class SourceController < ApplicationController
       render_error :status => 400, :errorcode => 'invalid_flag', :message => e.message
       return
     end
-      
+
     # Raising permissions afterwards is not secure. Do not allow this by default.
     unless @http_user.is_admin?
       if params[:flag] == "access" and params[:status] == "enable" and not prj.enabled_for?('access', params[:repository], params[:arch])
@@ -1970,9 +1999,9 @@ class SourceController < ApplicationController
     valid_http_methods :post
 
     required_parameters :project, :package, :flag
-    
+
     pkg = DbPackage.get_by_project_and_name( params[:project], params[:package] )
-    
+
     pkg.remove_flag(params[:flag], params[:repository], params[:arch])
     pkg.store
     render_ok

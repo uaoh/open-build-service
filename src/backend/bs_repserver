@@ -1431,6 +1431,7 @@ sub copybuild {
   my $oprojid = defined($cgi->{'oproject'}) ? $cgi->{'oproject'} : $projid;
   my $orepoid = defined($cgi->{'orepository'}) ? $cgi->{'orepository'} : $repoid;
   my $opackid = defined($cgi->{'opackage'}) ? $cgi->{'opackage'} : $packid;
+  my $norebuild = defined($cgi->{'norebuild'}) && $cgi->{'norebuild'};
   return $BSStdServer::return_ok if $oprojid eq $projid && $orepoid eq $repoid && $opackid eq $packid;
   return $BSStdServer::return_ok unless -d "$reporoot/$oprojid/$orepoid/$arch/$opackid";
   my $job = "copy-".Digest::MD5::md5_hex("$$/$projid/$repoid/$arch/$packid".time());
@@ -1458,9 +1459,11 @@ sub copybuild {
       link("$odir/$bin", "$dir/$bin") || die("link $odir/$bin $dir/$bin: $!\n");
     }
   }
-  
-  if (defined($cgi->{'norebuild'}) && $cgi->{'norebuild'}) {
+  print "Looking at norebuild: $cgi->{'norebuild'}\n";
+
+  if ($norebuild) {
     use File::Copy;
+    print "################ Doing a file copy for $packid in $arch\n";
     my $pdir = "$reporoot/$projid/$repoid/$arch/$packid";
     my $mpdir = "$reporoot/$projid/$repoid/$arch/:meta";
     my $modir = "$reporoot/$oprojid/$orepoid/$arch/:meta";
@@ -1487,7 +1490,9 @@ sub copybuild {
     $arch = 'signer';
   }
   close F;
-  dirty($projid, $repoid, $arch) if $arch ne 'signer';
+  if (not $norebuild) { # don't mark it dirty if we're doing a norebuild
+    dirty($projid, $repoid, $arch) if $arch ne 'signer';
+  }
   mkdir_p("$eventdir/$arch");
   writexml("$eventdir/$arch/.copybuild:$job$$", "$eventdir/$arch/copybuild:$job", $ev, $BSXML::event);
   ping($arch);
