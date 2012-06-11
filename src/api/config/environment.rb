@@ -78,6 +78,11 @@ Rails::Initializer.run do |config|
   unless ENV['FCGI_INSTANCE_NAME'].nil?
     config.log_path = "#{RAILS_ROOT}/log/#{ENV['FCGI_INSTANCE_NAME']}.log"
   end
+  
+  unless ENV['DELAYED_JOB_NAME'].nil?
+    config.log_path = "#{RAILS_ROOT}/log/#{ENV['DELAYED_JOB_NAME']}.log"
+  end
+
 
   # See Rails::Configuration for more options
   config.after_initialize do
