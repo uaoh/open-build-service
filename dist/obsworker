@@ -207,8 +207,13 @@ case "$1" in
                 SWAP=
                 MEMORY=
             fi
+	    if [ -n $OBS_WORKER_DISCRETE_IDS ]; then
+		WORKER_ID="$HOSTNAME/$I"
+	    else
+		WORKER_ID="$HOSTNAME-$I/1"
+	    fi
 	    echo "screen -t $title nice -n $OBS_NICE ./bs_worker $vmopt $port --root $R" \
-                "--statedir $workerdir/$I --id $HOSTNAME/$I $REPO_PARAM" \
+                "--statedir $workerdir/$I --id $WORKER_ID $REPO_PARAM" \
                 "$OBS_JOBS $OBS_TEST $OBS_WORKER_OPT $TMPFS $DEVICE $SWAP $MEMORY" \
                 >> $screenrc
 	    mkdir -p $workerdir/$I
