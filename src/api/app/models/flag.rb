@@ -116,10 +116,11 @@ class Flag < ApplicationRecord
     options = {}
     options['arch'] = architecture.name unless architecture.nil?
     options['repository'] = repo unless repo.nil?
+    options['package'] = pkgname unless pkgname.nil?
     builder.send(status.to_s, options)
   end
 
-  def is_explicit_for?(in_repo, in_arch)
+  def is_explicit_for?(in_repo, in_arch, in_package=nil)
     return false unless is_relevant_for?(in_repo, in_arch)
 
     arch = architecture ? architecture.name : nil
@@ -130,7 +131,10 @@ class Flag < ApplicationRecord
     return false if repo.nil? && in_repo
     return false if repo && in_repo.nil?
 
-    true
+    return false if pkgname.nil? and !in_package.nil?
+    return false if !pkgname.nil? and in_package.nil?
+
+    return true
   end
 
   # returns true when flag is relevant for the given repo/arch combination
@@ -157,6 +161,7 @@ class Flag < ApplicationRecord
     ret = status
     ret += " arch=#{architecture.name}" unless architecture.nil?
     ret += " repo=#{repo}" unless repo.nil?
+    ret += " package=#{pkgname}" unless pkgname.nil?
     ret
   end
 

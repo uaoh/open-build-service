@@ -717,7 +717,7 @@ class Project < ApplicationRecord
     flags = []
     if prj_flags
       prj_flags.each do |f|
-        flags << f if f.is_relevant_for?(repo, arch)
+        flags << f if f.is_relevant_for?(repo, arch) and f.pkgname.nil?
       end
     end
 

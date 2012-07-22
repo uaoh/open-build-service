@@ -496,6 +496,7 @@ CREATE TABLE `flags` (
   `architecture_id` int(11) DEFAULT NULL,
   `position` int(11) NOT NULL,
   `flag` enum('useforbuild','sourceaccess','binarydownload','debuginfo','build','publish','access','lock') CHARACTER SET utf8 NOT NULL,
+  `pkgname` varchar(255) COLLATE utf8_bin DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `index_flags_on_flag` (`flag`) USING BTREE,
   KEY `architecture_id` (`architecture_id`) USING BTREE,
@@ -1316,5 +1317,6 @@ INSERT INTO `schema_migrations` (version) VALUES
 ('20180109115548'),
 ('20180110074142'),
 ('20180307074538');
+('20181030161701');
 
 
