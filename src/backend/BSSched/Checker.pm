@@ -800,7 +800,7 @@ sub checkpkgs {
 	next;
       }
     } else {
-      if (!$projbuildenabled) {
+      if (!$projbuildenabled & !BSUtil::enabled($repoid, $projpacks->{$projid}->{'build'}, $projbuildenabled, $myarch, $packid)) {
 	$packstatus{$packid} = 'disabled';
 	next;
       }
