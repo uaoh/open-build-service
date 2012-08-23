@@ -4,7 +4,7 @@ class ConfigurationsController < ApplicationController
   before_filter :require_admin, :only => [:update]
 
   validate_action :show => {:method => :get, :response => :configuration}
-  validate_action :update => {:method => :put, :request => :configuration}
+#  validate_action :update => {:method => :put, :request => :configuration}
 
   # GET /configuration
   # GET /configuration.json
