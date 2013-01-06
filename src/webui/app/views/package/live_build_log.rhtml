@@ -52,7 +52,7 @@ package_bread_crumb 'Build Log'
   <%= javascript_options = options_for_ajax(:url => {:action => :update_build_log, :package => @package,
       :project => @project, :arch => @arch, :repository => @repo}, :error => 'stop_refresh()')
 
-  "var options = #{javascript_options}; options['url'] = options['url'] + '&offset=' + offset + ';&' + 'initial=' + initial;" %>
+  "var options = #{javascript_options}; options['url'] = options['url'] + '&offset=' + offset + ';&' + 'initial=' + initial;".html_safe %>
   <%=    "$.ajax(options);" %>
   }
   }
