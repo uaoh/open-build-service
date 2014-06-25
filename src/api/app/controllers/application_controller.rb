@@ -91,8 +91,9 @@ class ApplicationController < ActionController::Base
     rescue LoadError
       logger.warn "ldap_mode selected but 'ruby-ldap' module not installed."
       ldap_info = nil # now fall through as if we'd not found a user
-    rescue Exception
+    rescue Exception => ex
       logger.debug "#{@login} not found in LDAP."
+      logger.debug ex
       ldap_info = nil # now fall through as if we'd not found a user
     end
 
@@ -112,7 +113,7 @@ class ApplicationController < ActionController::Base
           @http_user=nil
           raise AuthenticationRequiredError.new "User '#{@login}' does not exist<br>#{errstr}"
         end
-        logger.debug( "No user found in database, creating" )
+        logger.debug( "User #{@login} not found in database, creating" )
         logger.debug( "Email: #{ldap_info[0]}" )
         logger.debug( "Name : #{ldap_info[1]}" )
         # Generate and store a fake pw in the OBS DB that no-one knows
