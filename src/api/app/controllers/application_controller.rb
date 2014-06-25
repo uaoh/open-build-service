@@ -110,7 +110,7 @@ class ApplicationController < ActionController::Base
         if ::Configuration.registration == "deny"
           logger.debug( "No user found in database, creation disabled" )
           @http_user=nil
-          raise AuthenticationRequiredError.new "User '#{login}' does not exist<br>#{errstr}"
+          raise AuthenticationRequiredError.new "User '#{@login}' does not exist<br>#{errstr}"
         end
         logger.debug( "No user found in database, creating" )
         logger.debug( "Email: #{ldap_info[0]}" )
@@ -119,7 +119,7 @@ class ApplicationController < ActionController::Base
         chars = ["A".."Z","a".."z","0".."9"].collect { |r| r.to_a }.join
         fakepw = (1..24).collect { chars[rand(chars.size)] }.pack('a'*24)
         newuser = User.create(
-            :login => login,
+            :login => @login,
             :password => fakepw,
             :password_confirmation => fakepw,
             :email => ldap_info[0] )
@@ -131,7 +131,7 @@ class ApplicationController < ActionController::Base
             logger.debug(msg)
           end
           @http_user=nil
-          raise AuthenticationRequiredError.new "Cannot create ldap userid: '#{login}' on OBS<br>#{errstr}"
+          raise AuthenticationRequiredError.new "Cannot create ldap userid: '#{@login}' on OBS<br>#{errstr}"
         end
         newuser.realname = ldap_info[1]
         newuser.state = User.states['confirmed']
@@ -171,7 +171,7 @@ class ApplicationController < ActionController::Base
       unless @http_user
         if ::Configuration.registration == "deny"
           logger.debug("No user found in database, creation disabled")
-          raise AuthenticationRequiredError.new "User '#{login}' does not exist<br>#{errstr}"
+          raise AuthenticationRequiredError.new "User '#{@login}' does not exist<br>#{errstr}"
         end
         state = User.states['confirmed']
         state = User.states['unconfirmed'] if ::Configuration.registration == "confirmation"
