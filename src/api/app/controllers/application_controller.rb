@@ -102,8 +102,9 @@ class ApplicationController < ActionController::Base
     rescue LoadError
       logger.warn "ldap_mode selected but 'ruby-ldap' module not installed."
       ldap_info = nil # now fall through as if we'd not found a user
-    rescue Exception
+    rescue Exception => ex
       logger.debug "#{@login} not found in LDAP."
+      logger.debug ex
       ldap_info = nil # now fall through as if we'd not found a user
     end
 
@@ -121,9 +122,9 @@ class ApplicationController < ActionController::Base
         if ::Configuration.registration == "deny"
           logger.debug( "No user found in database, creation disabled" )
           @http_user=nil
-          raise AuthenticationRequiredError.new "User '#{login}' does not exist<br>#{errstr}"
+          raise AuthenticationRequiredError.new "User '#{@login}' does not exist<br>#{errstr}"
         end
-        logger.debug( "No user found in database, creating" )
+        logger.debug( "User #{@login} not found in database, creating" )
         logger.debug( "Email: #{ldap_info[0]}" )
         logger.debug( "Name : #{ldap_info[1]}" )
         # Generate and store a fake pw in the OBS DB that no-one knows
@@ -142,7 +143,7 @@ class ApplicationController < ActionController::Base
             logger.debug(msg)
           end
           @http_user=nil
-          raise AuthenticationRequiredError.new "Cannot create ldap userid: '#{login}' on OBS<br>#{errstr}"
+          raise AuthenticationRequiredError.new "Cannot create ldap userid: '#{@login}' on OBS<br>#{errstr}"
         end
         newuser.realname = ldap_info[1]
         newuser.state = User.states['confirmed']
@@ -182,7 +183,7 @@ class ApplicationController < ActionController::Base
       unless @http_user
         if ::Configuration.registration == "deny"
           logger.debug("No user found in database, creation disabled")
-          raise AuthenticationRequiredError.new "User '#{login}' does not exist<br>#{errstr}"
+          raise AuthenticationRequiredError.new "User '#{@login}' does not exist<br>#{errstr}"
         end
         state = User.states['confirmed']
         state = User.states['unconfirmed'] if ::Configuration.registration == "confirmation"
