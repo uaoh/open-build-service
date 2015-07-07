@@ -1,7 +1,7 @@
 #
 # spec file for package obs-server
 #
-# Copyright (c) 2014 SUSE LINUX Products GmbH, Nuernberg, Germany.
+# Copyright (c) 2015 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -36,38 +36,38 @@ License:        GPL-2.0 and GPL-3.0
 Group:          Productivity/Networking/Web/Utilities
 %if 0%{?suse_version} < 1210 && 0%{?suse_version:1}
 %endif
-Version:        2.5.4
+Version:        2.6.2
 Release:        1
-Url:            http://en.opensuse.org/Build_Service
+Url:            http://www.openbuildservice.org
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 # Sources are retrieved using script which is attached as Source2
-Source:         obs-server-%version.tar.xz
+Source0:        open-build-service-%version.tar.xz
+Source1:        find-requires.sh
 Patch1:         0001-backend-Add-sb2install-dependancy-handling.patch
-Patch2:         0002-dist-Use-.log-instead-of-_log-for-apache-logs-so-the.patch
-Patch3:         0003-backend-Force-curl-to-use-no-proxy-to-get-the-bs_wor.patch
-Patch4:         0004-backend-Modify-copybuild-so-as-to-shortcircuit-unnec.patch
-Patch5:         0005-repserver-Make-prjlinks-a-bit-more-transparent.patch
-Patch6:         0006-backend-refactor-prjcopy-code-to-be-faster-and-less-.patch
-Patch7:         0007-backend-Revert-changes-to-upstream-copybuild-leave-t.patch
-Patch8:         0008-Use-the-copybinary-repo-server-API-Clarify-a-little-.patch
-Patch9:         0009-backend-Provide-OBS_WORKER_DISCRETE_IDS-to-permit-wo.patch
-Patch10:        0010-api-backend-Allow-per-package-build-flag-in-project-.patch
-Patch11:        0011-backend-Allow-package-build-flags-in-prjmeta-to-over.patch
-Patch12:        0012-api-Try-harder-to-preserve-flags.patch
-Patch13:        0013-backend-Worakaround-arch-mismatch-in-dod-armv7hl-met.patch
-Patch14:        0014-backend-Enable-HTTPS-support-for-the-benifit-of-http.patch
-Patch15:        0015-backend-Fix-tmpfs-umount-issues.patch
-Patch16:        0016-backend-fix-64bit-debian-dod.patch
-Patch17:        0017-api-Don-t-use-ftools.patch
-Patch18:        0018-api-Rename-Flag-model-s-package-field-to-pkgname.patch
-Patch19:        0019-api-Actually-preserve-flags-during-project-copy.patch
-Patch20:        0020-api-Change-expected-score-in-code-quality-test.patch
+Patch2:         0002-backend-Force-curl-to-use-no-proxy-to-get-the-bs_wor.patch
+Patch3:         0003-backend-Modify-copybuild-so-as-to-shortcircuit-unnec.patch
+Patch4:         0004-repserver-Make-prjlinks-a-bit-more-transparent.patch
+Patch5:         0005-backend-refactor-prjcopy-code-to-be-faster-and-less-.patch
+Patch6:         0006-backend-Revert-changes-to-upstream-copybuild-leave-t.patch
+Patch7:         0007-Use-the-copybinary-repo-server-API-Clarify-a-little-.patch
+Patch8:         0008-backend-Provide-OBS_WORKER_DISCRETE_IDS-to-permit-wo.patch
+Patch9:         0009-api-backend-Allow-per-package-build-flag-in-project-.patch
+Patch10:        0010-backend-Allow-package-build-flags-in-prjmeta-to-over.patch
+Patch11:        0011-api-Try-harder-to-preserve-flags.patch
+Patch12:        0012-backend-Worakaround-arch-mismatch-in-dod-armv7hl-met.patch
+Patch13:        0013-backend-Enable-HTTPS-support-for-the-benifit-of-http.patch
+Patch14:        0014-backend-Fix-tmpfs-umount-issues.patch
+Patch15:        0015-backend-fix-64bit-debian-dod.patch
+Patch16:        0016-api-Don-t-use-ftools.patch
+Patch17:        0017-api-Rename-Flag-model-s-package-field-to-pkgname.patch
+Patch18:        0018-api-Actually-preserve-flags-during-project-copy.patch
+Patch19:        0019-api-Change-expected-score-in-code-quality-test.patch
 BuildRequires:  python-devel
 # make sure this is in sync with the RAILS_GEM_VERSION specified in the
 # config/environment.rb of the various applications.
 # atm the obs rails version patch above unifies that setting among the applications
 # also see requires in the obs-server-api sub package
-BuildRequires:  build >= 20140123
+BuildRequires:  build >= 20140717
 BuildRequires:  inst-source-utils
 BuildRequires:  perl-BSSolv
 BuildRequires:  perl-Compress-Zlib
@@ -77,25 +77,24 @@ BuildRequires:  perl-Net-SSLeay
 BuildRequires:  perl-Socket-MsgHdr
 BuildRequires:  perl-TimeDate
 BuildRequires:  perl-XML-Parser
+BuildRequires:  perl-XML-Simple
 BuildRequires:  procps
 BuildRequires:  xorg-x11-server
 PreReq:         /usr/sbin/useradd /usr/sbin/groupadd
-Requires:       build >= 20140123
+BuildArch:      noarch
+Requires:       build >= 20140717
 Requires:       obs-productconverter >= %version
 Requires:       obs-worker
-Requires:       perl-BSSolv >= 0.18.0
+Requires:       perl-BSSolv >= 0.19.0
 # Required by source server
 Requires:       diffutils
 PreReq:         git-core
 Requires:       patch
-# require the createrepo version which got used in the testsuite
-Requires:       %(/bin/bash -c 'rpm -q --qf "%%{name} = %%{version}" createrepo')
-# depend hard to new python-yum. There are too many broken versions of yum-common around.
-Requires:       python-yum
+# require the createrepo and python-yum version which got validated during testsuite run
+Requires:       %(/bin/bash -c 'rpm -q --qf "%%{name} = %%{version}-%%{release}" createrepo')
+Requires:       %(/bin/bash -c 'rpm -q --qf "%%{name} = %%{version}-%%{release}" python-yum')
 
-%if 0%{?suse_version} < 1210
 BuildRequires:  xz
-%endif
 
 %if 0%{?suse_version:1}
 BuildRequires:  fdupes
@@ -151,17 +150,9 @@ PreReq:         %fillup_prereq %insserv_prereq
 %if 0%{?suse_version} <= 1030
 Requires:       lzma
 %endif
-%if 0%{?suse_version} >= 1120
-BuildArch:      noarch
 Requires:       util-linux >= 2.16
-%else
-%ifarch x86_64
-Requires:       linux32
-%endif
-%ifarch ppc64
-Requires:       powerpc32
-%endif
-%endif
+# the following may not even exist depending on the architecture
+Recommends:     powerpc32
 
 %description -n obs-worker
 This is the obs build host, to be installed on each machine building
@@ -179,88 +170,37 @@ PreReq:         %fillup_prereq %insserv_prereq
 %endif
 
 #For apache
-Recommends:     apache2 apache2-mod_xforward rubygem-passenger-apache2
+Recommends:     apache2 apache2-mod_xforward rubygem(passenger-apache2)
 
 # memcache is required for session data
 Requires:       memcached
 Conflicts:      memcached < 1.4
 
 # For local runs
-BuildRequires:  rubygem-sqlite3
+BuildRequires:  rubygem(sqlite3)
 
 Requires:       mysql
 
-Requires:       ruby >= 2.0
+Requires:       ruby(abi) >= 2.0
 # needed for fulltext searching
-Requires:       sphinx >= 2.0.8
-Supplements:    rubygem-ruby-ldap
+Requires:       sphinx >= 2.1.8
 BuildRequires:  obs-api-testsuite-deps
-BuildRequires:  rubygem-ruby-ldap
+BuildRequires:  rubygem(ruby-ldap)
 # for test suite:
 BuildRequires:  createrepo
 BuildRequires:  curl
 BuildRequires:  memcached >= 1.4
 BuildRequires:  mysql
 BuildRequires:  netcfg
-BuildRequires:  rubygem-ci_reporter
 BuildRequires:  xorg-x11-Xvnc
 BuildRequires:  xorg-x11-server
 BuildRequires:  xorg-x11-server-extra
-# OBS_SERVER_BEGIN
-Requires:       rubygem(2.0.0:actionmailer) = 4.0.3
-Requires:       rubygem(2.0.0:actionpack) = 4.0.3
-Requires:       rubygem(2.0.0:activemodel) = 4.0.3
-Requires:       rubygem(2.0.0:activerecord) = 4.0.3
-Requires:       rubygem(2.0.0:activerecord-deprecated_finders) = 1.0.3
-Requires:       rubygem(2.0.0:activesupport) = 4.0.3
-Requires:       rubygem(2.0.0:arel) = 4.0.1
-Requires:       rubygem(2.0.0:atomic) = 1.1.14
-Requires:       rubygem(2.0.0:builder) = 3.1.4
-Requires:       rubygem(2.0.0:bundler) = 1.3.4
-Requires:       rubygem(2.0.0:clockwork) = 0.7.0
-Requires:       rubygem(2.0.0:daemons) = 1.1.9
-Requires:       rubygem(2.0.0:dalli) = 2.6.4
-Requires:       rubygem(2.0.0:delayed_job) = 4.0.0
-Requires:       rubygem(2.0.0:delayed_job_active_record) = 4.0.0
-Requires:       rubygem(2.0.0:erubis) = 2.7.0
-Requires:       rubygem(2.0.0:escape_utils) = 1.0.0
-Requires:       rubygem(2.0.0:haml) = 4.0.4
-Requires:       rubygem(2.0.0:hike) = 1.2.3
-Requires:       rubygem(2.0.0:hoptoad_notifier) = 2.4.11
-Requires:       rubygem(2.0.0:i18n) = 0.6.9
-Requires:       rubygem(2.0.0:innertube) = 1.1.0
-Requires:       rubygem(2.0.0:json) = 1.8.1
-Requires:       rubygem(2.0.0:kaminari) = 0.15.0
-Requires:       rubygem(2.0.0:mail) = 2.5.4
-Requires:       rubygem(2.0.0:middleware) = 0.1.0
-Requires:       rubygem(2.0.0:mime-types) = 1.25
-Requires:       rubygem(2.0.0:mini_portile) = 0.5.2
-Requires:       rubygem(2.0.0:minitest) = 4.7.4
-Requires:       rubygem(2.0.0:multi_json) = 1.8.2
-Requires:       rubygem(2.0.0:mysql2) = 0.3.14
-Requires:       rubygem(2.0.0:newrelic_rpm) = 3.7.0.177
-Requires:       rubygem(2.0.0:nokogiri) = 1.6.0
-Requires:       rubygem(2.0.0:pkg-config) = 1.1.4
-Requires:       rubygem(2.0.0:polyglot) = 0.3.3
-Requires:       rubygem(2.0.0:rack) = 1.5.2
-Requires:       rubygem(2.0.0:rack-test) = 0.6.2
-Requires:       rubygem(2.0.0:rails) = 4.0.3
-Requires:       rubygem(2.0.0:railties) = 4.0.3
-Requires:       rubygem(2.0.0:rake) = 10.1.0
-Requires:       rubygem(2.0.0:rdoc) = 4.0.1
-Requires:       rubygem(2.0.0:riddle) = 1.5.9
-Requires:       rubygem(2.0.0:ruby-ldap) = 0.9.16
-Requires:       rubygem(2.0.0:sprockets) = 2.10.1
-Requires:       rubygem(2.0.0:sprockets-rails) = 2.0.1
-Requires:       rubygem(2.0.0:thinking-sphinx) = 3.0.6
-Requires:       rubygem(2.0.0:thor) = 0.18.1
-Requires:       rubygem(2.0.0:thread_safe) = 0.1.3
-Requires:       rubygem(2.0.0:tilt) = 1.4.1
-Requires:       rubygem(2.0.0:treetop) = 1.4.15
-Requires:       rubygem(2.0.0:tzinfo) = 0.3.37
-Requires:       rubygem(2.0.0:xmlhash) = 1.3.6
-Requires:       rubygem(2.0.0:yajl-ruby) = 1.1.0
-# OBS_SERVER_END
+BuildRequires:  rubygem(ci_reporter)
+# write down dependencies for production
+BuildRequires:  rubygem(bundler)
+Requires:       %(echo `bash %{S:1} %{S:0} "ruby:2.1.0"`)
+# for rebuild_time
+Requires:       perl(GD)
 
 Requires:       ghostscript-fonts-std
 Summary:        The Open Build Service -- The API and WEBUI
@@ -326,6 +266,7 @@ Requires:       ruby
 obs_project_update is a tool to copy a packages of a project from one obs to another
 
 #--------------------------------------------------------------------------------
+
 %prep
 %setup -q -n src
 %patch1 -p1
@@ -347,7 +288,6 @@ obs_project_update is a tool to copy a packages of a project from one obs to ano
 %patch17 -p1
 %patch18 -p1
 %patch19 -p1
-%patch20 -p1
 # drop build script, we require the installed one from own package
 rm -rf src/build
 find . -name .git\* -o -name Capfile -o -name deploy.rb | xargs rm -rf
@@ -375,7 +315,11 @@ cd dist
 %endif
 # configure apache web service
 mkdir -p $RPM_BUILD_ROOT/etc/apache2/vhosts.d/
+%if 0%{?suse_version} < 1300
 install -m 0644 obs-apache2.conf $RPM_BUILD_ROOT/etc/apache2/vhosts.d/obs.conf
+%else
+install -m 0644 obs-apache24.conf $RPM_BUILD_ROOT/etc/apache2/vhosts.d/obs.conf
+%endif
 # install overview page template
 mkdir -p $RPM_BUILD_ROOT/srv/www/obs/overview
 install -m 0644 overview.html.TEMPLATE $RPM_BUILD_ROOT/srv/www/obs/overview/
@@ -393,7 +337,7 @@ for i in obssrcserver obsrepserver obsscheduler obsworker obspublisher obsdispat
 done
 # install logrotate
 install -d -m 755 $RPM_BUILD_ROOT/etc/logrotate.d/
-for i in obs-api obs-build obs-server ; do
+for i in obs-api obs-server ; do
   install -m 0644 ${i}.logrotate \
            $RPM_BUILD_ROOT/etc/logrotate.d/$i
 done
@@ -474,9 +418,6 @@ cd ..
 %fdupes $RPM_BUILD_ROOT/srv/www/obs
 %endif
 
-# no more lighttpd
-rm $RPM_BUILD_ROOT/srv/www/obs/api/config/lighttpd.conf
-
 # these config files must not be hard linked
 install api/config/database.yml.example $RPM_BUILD_ROOT/srv/www/obs/api/config/database.yml
 install api/config/options.yml.example $RPM_BUILD_ROOT/srv/www/obs/api/config/options.yml
@@ -506,6 +447,13 @@ cat > %{buildroot}%{_docdir}/README.devel <<EOF
 This package does not contain any development files. But it helps you start with 
 git development - look at http://github.com/opensuse/open-build-service
 EOF
+
+%if 0%{?suse_version}
+# adapt to SUSE style ruby parallel installation
+find %{buildroot} -executable -a -type f | while read file; do
+  sed -i -s 's,^#!/usr/bin/env ruby$,#!/usr/bin/env ruby.ruby2.1,' "$file"
+done
+%endif
 
 %check
 # check installed backend
@@ -539,7 +487,7 @@ cat > config/database.yml <<EOF
 migrate:
   adapter: mysql2
   host:    localhost
-  database: frontend_24
+  database: api_25
   username: root
   encoding: utf8
   socket:   /tmp/obs.test.mysql.socket
@@ -550,12 +498,15 @@ test:
   username: root
   encoding: utf8
   socket:   /tmp/obs.test.mysql.socket
+  # disable timeout, required on SLES 11 SP3 at least
+  connect_timeout:
+
 EOF
 /usr/sbin/memcached -l 127.0.0.1 -d -P $PWD/memcached.pid
 # migration test
 export RAILS_ENV=migrate
 bundle exec rake --trace db:create || exit 1
-xzcat test/dump_2.4.sql.xz | mysql  -u root --socket=/tmp/obs.test.mysql.socket
+xzcat test/dump_2.5.sql.xz | mysql  -u root --socket=/tmp/obs.test.mysql.socket
 bundle exec rake --trace db:migrate db:drop || exit 1
 # entire test suite
 export RAILS_ENV=test
@@ -594,7 +545,6 @@ exit 0
 %stop_on_removal obsworker
 
 %post
-[ -d /srv/obs ] || install -d -o obsrun -g obsrun /srv/obs
 %{fillup_and_insserv -n obs-server}
 %restart_on_update obssrcserver obsrepserver obsdispatcher obsscheduler obspublisher obswarden obssigner
 
@@ -605,6 +555,7 @@ exit 0
 %restart_on_update obsservice
 
 %posttrans
+[ -d /srv/obs ] || install -d -o obsrun -g obsrun /srv/obs
 # this changes from directory to symlink. rpm can not handle this itself.
 if [ -e /usr/lib/obs/server/build -a ! -L /usr/lib/obs/server/build ]; then
   rm -rf /usr/lib/obs/server/build
@@ -652,6 +603,7 @@ touch /srv/www/obs/api/log/production.log
 chown %{apache_user}:%{apache_group} /srv/www/obs/api/log/production.log
 
 %restart_on_update apache2
+%restart_on_update memcached
 %restart_on_update obsapisetup
 %restart_on_update obsapidelayed
 
@@ -721,6 +673,7 @@ chown %{apache_user}:%{apache_group} /srv/www/obs/api/log/production.log
 /usr/lib/obs/server/bs_archivereq
 /usr/lib/obs/server/bs_check_consistency
 /usr/lib/obs/server/bs_getbinariesproxy
+/usr/lib/obs/server/bs_mergechanges
 /usr/lib/obs/server/bs_mkarchrepo
 /usr/lib/obs/server/bs_dispatch
 /usr/lib/obs/server/bs_publish
@@ -776,7 +729,6 @@ chown %{apache_user}:%{apache_group} /srv/www/obs/api/log/production.log
 /srv/www/obs/api/config.ru
 /srv/www/obs/api/config/application.rb
 /srv/www/obs/api/config/clock.rb
-/etc/logrotate.d/obs-build
 /etc/logrotate.d/obs-api
 /etc/init.d/obsapidelayed
 /etc/init.d/obsapisetup
