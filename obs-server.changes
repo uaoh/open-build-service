@@ -1,3 +1,5 @@
+* Sun Jul 19 2015 Oleg Girko <ol@infoserver.lv> - 2.6.2-2
+- Add patch to fix arguments passed to createpatterns_comps() in bs_publish
 * Tue Jul 07 2015 Oleg Girko <ol@infoserver.lv> - 2.6.2-1
 - Rebase on OBS 2.6.2
 * Tue Jul 15 2014 Oleg Girko <oleg.girko@jolla.com> - 2.5.4-1

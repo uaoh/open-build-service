@@ -62,6 +62,7 @@ Patch16:        0016-api-Don-t-use-ftools.patch
 Patch17:        0017-api-Rename-Flag-model-s-package-field-to-pkgname.patch
 Patch18:        0018-api-Actually-preserve-flags-during-project-copy.patch
 Patch19:        0019-api-Change-expected-score-in-code-quality-test.patch
+Patch20:        0020-backend-publish-fix-arguments-passed-to-createpatter.patch
 BuildRequires:  python-devel
 # make sure this is in sync with the RAILS_GEM_VERSION specified in the
 # config/environment.rb of the various applications.
@@ -288,6 +289,7 @@ obs_project_update is a tool to copy a packages of a project from one obs to ano
 %patch17 -p1
 %patch18 -p1
 %patch19 -p1
+%patch20 -p1
 # drop build script, we require the installed one from own package
 rm -rf src/build
 find . -name .git\* -o -name Capfile -o -name deploy.rb | xargs rm -rf
