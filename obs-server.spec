@@ -216,59 +216,59 @@ BuildRequires:  xorg-x11-Xvnc
 BuildRequires:  xorg-x11-server
 BuildRequires:  xorg-x11-server-extra
 # OBS_SERVER_BEGIN
-Requires:       rubygem(actionmailer) = 4.0.3
-Requires:       rubygem(actionpack) = 4.0.3
-Requires:       rubygem(activemodel) = 4.0.3
-Requires:       rubygem(activerecord) = 4.0.3
-Requires:       rubygem(activerecord-deprecated_finders) = 1.0.3
-Requires:       rubygem(activesupport) = 4.0.3
-Requires:       rubygem(arel) = 4.0.1
-Requires:       rubygem(atomic) = 1.1.14
-Requires:       rubygem(builder) = 3.1.4
-Requires:       rubygem(bundler) = 1.3.4
-Requires:       rubygem(clockwork) = 0.7.0
-Requires:       rubygem(daemons) = 1.1.9
-Requires:       rubygem(dalli) = 2.6.4
-Requires:       rubygem(delayed_job) = 4.0.0
-Requires:       rubygem(delayed_job_active_record) = 4.0.0
-Requires:       rubygem(erubis) = 2.7.0
-Requires:       rubygem(escape_utils) = 1.0.0
-Requires:       rubygem(haml) = 4.0.4
-Requires:       rubygem(hike) = 1.2.3
-Requires:       rubygem(hoptoad_notifier) = 2.4.11
-Requires:       rubygem(i18n) = 0.6.9
-Requires:       rubygem(innertube) = 1.1.0
-Requires:       rubygem(json) = 1.8.1
-Requires:       rubygem(kaminari) = 0.15.0
-Requires:       rubygem(mail) = 2.5.4
-Requires:       rubygem(middleware) = 0.1.0
-Requires:       rubygem(mime-types) = 1.25
-Requires:       rubygem(mini_portile) = 0.5.2
-Requires:       rubygem(minitest) = 4.7.4
-Requires:       rubygem(multi_json) = 1.8.2
-Requires:       rubygem(mysql2) = 0.3.14
-Requires:       rubygem(newrelic_rpm) = 3.7.0.177
-Requires:       rubygem(nokogiri) = 1.6.0
-Requires:       rubygem(pkg-config) = 1.1.4
-Requires:       rubygem(polyglot) = 0.3.3
-Requires:       rubygem(rack) = 1.5.2
-Requires:       rubygem(rack-test) = 0.6.2
-Requires:       rubygem(rails) = 4.0.3
-Requires:       rubygem(railties) = 4.0.3
-Requires:       rubygem(rake) = 10.1.0
-Requires:       rubygem(rdoc) = 4.0.1
-Requires:       rubygem(riddle) = 1.5.9
-Requires:       rubygem(ruby-ldap) = 0.9.16
-Requires:       rubygem(sprockets) = 2.10.1
-Requires:       rubygem(sprockets-rails) = 2.0.1
-Requires:       rubygem(thinking-sphinx) = 3.0.6
-Requires:       rubygem(thor) = 0.18.1
-Requires:       rubygem(thread_safe) = 0.1.3
-Requires:       rubygem(tilt) = 1.4.1
-Requires:       rubygem(treetop) = 1.4.15
-Requires:       rubygem(tzinfo) = 0.3.37
-Requires:       rubygem(xmlhash) = 1.3.6
-Requires:       rubygem(yajl-ruby) = 1.1.0
+Requires:       rubygem(actionmailer)
+Requires:       rubygem(actionpack)
+Requires:       rubygem(activemodel)
+Requires:       rubygem(activerecord)
+Requires:       rubygem(activerecord-deprecated_finders)
+Requires:       rubygem(activesupport)
+Requires:       rubygem(arel)
+Requires:       rubygem(atomic)
+Requires:       rubygem(builder)
+Requires:       rubygem(bundler)
+Requires:       rubygem(clockwork)
+Requires:       rubygem(daemons)
+Requires:       rubygem(dalli)
+Requires:       rubygem(delayed_job)
+Requires:       rubygem(delayed_job_active_record)
+Requires:       rubygem(erubis)
+Requires:       rubygem(escape_utils)
+Requires:       rubygem(haml)
+Requires:       rubygem(hike)
+Requires:       rubygem(hoptoad_notifier)
+Requires:       rubygem(i18n)
+Requires:       rubygem(innertube)
+Requires:       rubygem(json)
+Requires:       rubygem(kaminari)
+Requires:       rubygem(mail)
+Requires:       rubygem(middleware)
+Requires:       rubygem(mime-types)
+Requires:       rubygem(mini_portile)
+Requires:       rubygem(minitest)
+Requires:       rubygem(multi_json)
+Requires:       rubygem(mysql2)
+Requires:       rubygem(newrelic_rpm)
+Requires:       rubygem(nokogiri)
+Requires:       rubygem(pkg-config)
+Requires:       rubygem(polyglot)
+Requires:       rubygem(rack)
+Requires:       rubygem(rack-test)
+Requires:       rubygem(rails)
+Requires:       rubygem(railties)
+Requires:       rubygem(rake)
+Requires:       rubygem(rdoc)
+Requires:       rubygem(riddle)
+Requires:       rubygem(ruby-ldap)
+Requires:       rubygem(sprockets)
+Requires:       rubygem(sprockets-rails)
+Requires:       rubygem(thinking-sphinx)
+Requires:       rubygem(thor)
+Requires:       rubygem(thread_safe)
+Requires:       rubygem(tilt)
+Requires:       rubygem(treetop)
+Requires:       rubygem(tzinfo)
+Requires:       rubygem(xmlhash)
+Requires:       rubygem(yajl-ruby)
 # OBS_SERVER_END
 
 Requires:       ghostscript-fonts-std
