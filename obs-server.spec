@@ -195,7 +195,7 @@ Requires:       memcached
 Conflicts:      memcached < 1.4
 
 # For local runs
-BuildRequires:  rubygem-sqlite3
+BuildRequires:  rubygem(sqlite3)
 
 Requires:       mysql
 
@@ -204,7 +204,7 @@ Requires:       ruby >= 2.0
 Requires:       sphinx >= 2.0.8
 Supplements:    rubygem-ruby-ldap
 BuildRequires:  obs-api-testsuite-deps
-BuildRequires:  rubygem-ruby-ldap
+BuildRequires:  rubygem(ruby-ldap)
 # for test suite:
 BuildRequires:  createrepo
 BuildRequires:  curl
