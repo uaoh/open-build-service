@@ -203,6 +203,7 @@ our $aggregatelist = [
 		'target',
 		'source',
          ]],
+         [ 'arch' ],
      ]],
 ];
 

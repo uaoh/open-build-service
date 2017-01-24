@@ -118,7 +118,7 @@ sub end_handler {
 	'armv5el' => ['arm', 'armel', 'armv5el', 'armv5tel', 'armv5tevl' ,                                                                              'noarch'],
 	'armv6el' => ['arm', 'armel',                                                   'armv6l', 'armv6el',                                            'noarch'],
 	'armv7el' => ['arm', 'armel',                                                                                    'armv7l', 'armv7el',           'noarch'],
-	'armv7hl' => ['armhf', 'armv7hl', 'armv7nhl',                                 'noarch'],
+	'armv7hl' => ['armhf', 'armv7hl', 'armv7nhl', 'armv7tnhl',                    'noarch'],
 	'ppc'     => ['ppc',                                                          'noarch'],
 	'ppc64'   => ['ppc', 'ppc64',                                                 'noarch'],
 	'sh4'     => ['sh4',                                                          'noarch'],

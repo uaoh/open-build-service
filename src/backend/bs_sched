@@ -83,6 +83,7 @@ my $extrepodir = "$bsdir/repos";
 my $extrepodir_sync = "$bsdir/repos_sync";
 my $extrepodb = "$bsdir/db/published";
 my $uploaddir = "$bsdir/upload";
+my $markersdir = "$bsdir/markers";
 my $rundir = $BSConfig::rundir || "$bsdir/run";
 my $infodir = "$bsdir/info";
 my $remotecache = "$BSConfig::bsdir/remotecache";
@@ -3667,13 +3668,23 @@ sub calc_prps {
 	# push source repositories used in this aggregate onto xsp, obey target mapping
 	for my $agg (map {@{$_->{'aggregatelist'}->{'aggregate'} || []}} @aggs) {
 	  my $aprojid = $agg->{'project'};
-	  my @arepoids = grep {!exists($_->{'target'}) || $_->{'target'} eq $repoid} @{$agg->{'repository'} || []}; 
+	  my @arepoids = grep {!exists($_->{'target'}) || $_->{'target'} eq $repoid} @{$agg->{'repository'} || []};
           if (@arepoids) {
 	    # got some mappings for our target, use source as repoid
-            push @xsp, map {"$aprojid/$_->{'source'}"} grep {exists($_->{'source'})} @arepoids;
+	    push @xsp, map {"$aprojid/$_->{'source'}"} grep {exists($_->{'source'})} @arepoids;
           } else {
 	    # no repository mapping, just use own repoid
-	    push @xsp, "$aprojid/$repoid";
+            push @xsp, "$aprojid/$repoid";
+          }
+          my @apackids = $agg->{'package'} ? @{$agg->{'package'}} : (sort keys(%{($projpacks->{$aprojid} || {})->{'package'} || {}}));
+          for my $apack (@apackids) {
+            my @aarchs = $agg->{'arch'} ? @{$agg->{'arch'}} : ($myarch);
+            for my $aarch (@aarchs) {
+              if ($aarch ne $myarch) {
+                warn ("$prp $apack needs cross publishing from $aarch");
+                add_crossaggmarker($aarch, $prp, $apack);
+              }
+            }
           }
 	}
       }
@@ -3710,6 +3721,29 @@ sub calc_prps {
   # do the real sorting
   print "sorting projects and repositories...\n";
   @prps = sortpacks(\%prpdeps, undef, undef, @prps);
+}
+
+sub add_crossaggmarker {
+  my ($crossarch, $prp, $packid) = @_;
+  warn("checking if $crossarch is known");
+  return unless $BSCando::knownarch{$crossarch};
+  my $job = jobname($prp, $packid);
+  my $marker = "$markersdir/$crossarch/$job:$myarch:crossagg";
+  warn("creating cross aggregation marker $marker");
+  mkdir_p("$markersdir/$crossarch");
+  return if -e $marker;
+  BSUtil::touch($marker);
+}
+
+sub trigger_crossagg {
+  my ($projid, $repoid, $packid) = @_;
+  my $prp = "$projid/$repoid";
+  my $job = jobname($prp, $packid);
+  for my $aarch (map {/^\Q$job\E:(.+?):crossagg$/ ? $1 : ()} ls("$markersdir/$myarch")) {
+    warn("found cross agg marker for $job in $aarch , sending rebuild event");
+    my $ev = { type => 'rebuild', 'project' => $projid, 'package' => $packid };
+    sendevent($ev, $aarch, "rebuild:${projid}::${packid}");
+  }
 }
 
 ####################################################################
@@ -4341,6 +4375,9 @@ sub jobfinished {
   unlink("$gdst/:logfiles.fail/$packid");
   unlink($_) for @all;
   rmdir($jobdatadir);
+
+  # a successful build was finished and changed results are in :full so trigger cross aggregation now
+  trigger_crossagg($projid, $repoid, $packid);
 }
 
 sub aggregatefinished {
@@ -6075,25 +6112,32 @@ sub checkaggregate {
     my @apackids = @{$aggregate->{'package'} || []};
     my $abinfilter;
     $abinfilter = { map {$_ => 1} @{$aggregate->{'binary'}} } if $aggregate->{'binary'};
+
+    my @aarchs = ($myarch);
+      if ($aggregate->{'arch'}) {
+      @aarchs = @{$aggregate->{'arch'}};
+    }
+
     for my $arepoid (@arepoids) {
+    for my $aarch (@aarchs) {
       my $aprp = "$aprojid/$arepoid";
       my $arepo = (grep {$_->{'name'} eq $arepoid} @{$proj->{'repository'} || []})[0];
-      if (!$arepo || !grep {$_ eq $myarch} @{$arepo->{'arch'} || []}) {
-	push @broken, $aprp;
-	next;
-      }
+      #if (!$arepo || !grep {$_ eq $aarch} @{$arepo->{'arch'} || []}) {
+	#push @broken, $aprp;
+	#next;
+      #}
       next if !$remoteprojs{$aprojid} && $prpfinished->{$aprp} && $aggregate->{'package'};	# no need to check blocked state
       # notready/prpnotready is indexed with source binary names, so we cannot use it here...
-      my $ps = BSUtil::retrieve("$reporoot/$aprp/$myarch/:packstatus", 1);
+      my $ps = BSUtil::retrieve("$reporoot/$aprp/$aarch/:packstatus", 1);
       if (!$ps) {
-	$ps = (readxml("$reporoot/$aprp/$myarch/:packstatus", $BSXML::packstatuslist, 1) || {})->{'packstatus'} || [];
+	$ps = (readxml("$reporoot/$aprp/$aarch/:packstatus", $BSXML::packstatuslist, 1) || {})->{'packstatus'} || [];
 	$ps = { 'packstatus' => { map {$_->{'name'} => $_->{'status'}} @$ps } };
       }
       $ps = ($ps || {})->{'packstatus'} || {};
 
       # for remote projects we always need the gbininfo
       if ($remoteprojs{$aprojid}) {
-	my $gbininfo = read_gbininfo_remote($ctx, "$aprp/$myarch", $remoteprojs{$aprojid}, $ps);
+	my $gbininfo = read_gbininfo_remote($ctx, "$aprp/$aarch", $remoteprojs{$aprojid}, $ps);
 	$gbininfos{"$aprp/$myarch"} = $gbininfo;
 	if (!$gbininfo) {
 	  $delayed = 1 if defined $gbininfo;
@@ -6106,9 +6150,9 @@ sub checkaggregate {
         # calculate apackids using the gbininfo file
         my $gbininfo;
         if ($remoteprojs{$aprojid}) {
-          $gbininfo = $gbininfos{"$aprp/$myarch"};
+          $gbininfo = $gbininfos{"$aprp/$aarch"};
         } else {
-          $gbininfo = read_gbininfo("$reporoot/$aprp/$myarch");
+          $gbininfo = read_gbininfo("$reporoot/$aprp/$aarch");
         }
 	if (!$gbininfo) {
 	  push @broken, $aprp;
@@ -6132,6 +6176,7 @@ sub checkaggregate {
 	  push @blocked, "$aprp/$apackid";
 	}
       }
+    }
     }
     # patch in calculated package list
     $aggregate->{'package'} ||= \@apackids;
@@ -6159,18 +6204,24 @@ sub checkaggregate {
     } else {
       @arepoids = ($repoid);
     }
+    my @aarchs = ($myarch);
+    if ($aggregate->{'arch'}) {
+      @aarchs = @{$aggregate->{'arch'}};
+    }
+
     for my $arepoid (@arepoids) {
+      for my $aarch (@aarchs) {
       for my $apackid (@apackids) {
 	my $m = '';
         if ($remoteprojs{$aprojid}) {
-	  my $bininfo = ($gbininfos{"$aprojid/$arepoid/$myarch"} || {})->{$apackid} || {};
+	  my $bininfo = ($gbininfos{"$aprojid/$arepoid/$aarch"} || {})->{$apackid} || {};
 	  for my $b (values %$bininfo) {
 	    next unless $b->{'filename'} && ($b->{'filename'} eq 'updateinfo.xml' || $b->{'filename'} =~ /\.(?:$binsufsre)$/);
 	    $m .= $b->{'hdrmd5'} || $b->{'md5sum'} || '';
 	  }
 	} else {
 	  next if $aprojid eq $projid && $arepoid eq $repoid && $apackid eq $packid;
-	  my $d = "$reporoot/$aprojid/$arepoid/$myarch/$apackid";
+	  my $d = "$reporoot/$aprojid/$arepoid/$aarch/$apackid";
 	  my @d = grep {$_ eq 'updateinfo.xml' || /\.(?:$binsufsre)$/} ls($d);
 	  for my $b (sort @d) {
 	    my @s = stat("$d/$b");
@@ -6178,9 +6229,10 @@ sub checkaggregate {
 	    $m .= "$b\0$s[9]/$s[7]/$s[1]\0";
 	  }
 	}
-	$m = Digest::MD5::md5_hex($m)."  $aprojid/$arepoid/$myarch/$apackid";
+	$m = Digest::MD5::md5_hex($m)."  $aprojid/$arepoid/$aarch/$apackid";
 	push @new_meta, $m;
       }
+    }
     }
   }
   my @meta;
@@ -6243,7 +6295,14 @@ sub rebuildaggregate {
     my @apackids = @{$aggregate->{'package'} || []};
     my $abinfilter;
     $abinfilter = { map {$_ => 1} @{$aggregate->{'binary'}} } if $aggregate->{'binary'};
+
+    my @aarchs = ($myarch);
+    if ($aggregate->{'arch'}) {
+      @aarchs = @{$aggregate->{'arch'}};
+    }
+
     for my $arepoid (reverse @arepoids) {
+      for my $aarch (@aarchs) {
       for my $apackid (@apackids) {
         my @d;
 	my $cpio;
@@ -6251,7 +6310,7 @@ sub rebuildaggregate {
         my $updateinfo;
         if ($remoteprojs{$aprojid}) {
 	  my $param = {
-	    'uri' => "$remoteprojs{$aprojid}->{'remoteurl'}/build/$remoteprojs{$aprojid}->{'remoteproject'}/$arepoid/$myarch/$apackid",
+	    'uri' => "$remoteprojs{$aprojid}->{'remoteurl'}/build/$remoteprojs{$aprojid}->{'remoteproject'}/$arepoid/$aarch/$apackid",
 	    'receiver' => \&BSHTTP::cpio_receiver,
 	    'directory' => $jobdatadir,
 	    'map' => "upload:",
@@ -6272,7 +6331,7 @@ sub rebuildaggregate {
 	    warn($@);
 	    $error = $@;
 	    $error =~ s/\n$//s;
-	    addretryevent({'type' => 'repository', 'project' => $aprojid, 'repository' => $arepoid, 'arch' => $myarch}) if $error !~ /remote error:/;
+	    addretryevent({'type' => 'repository', 'project' => $aprojid, 'repository' => $arepoid, 'arch' => $aarch}) if $error !~ /remote error:/;
 	    last;
 	  }
 	  for my $bin (@{$cpio || []}) {
@@ -6281,7 +6340,7 @@ sub rebuildaggregate {
 	  }
         } else {
 	  next if $aprojid eq $projid && $arepoid eq $repoid && $apackid eq $packid;
-	  my $d = "$reporoot/$aprojid/$arepoid/$myarch/$apackid";
+	  my $d = "$reporoot/$aprojid/$arepoid/$aarch/$apackid";
 	  $updateinfo = "$d/updateinfo.xml" if -f "$d/updateinfo.xml";
 	  @d = grep {/\.(?:$binsufsre)$/} ls($d);
           @d = map {"$d/$_"} sort(@d);
@@ -6299,7 +6358,15 @@ sub rebuildaggregate {
 	  $basename =~ s/.*\///;
 	  $basename =~ s/^upload:// if $cpio;
 	  next if $jobbins{$basename};	# first one wins
+          # filter incompatible arch binaries
+          my $iscompat = 0;
+          for my $arch (keys ($BSCando::knownarch{$r->{'arch'}} || {})) {
+            $iscompat = grep /^($myarch)$/ , @{$BSCando::cando{$arch}};
+            last if $iscompat;
+          }
+          next unless $iscompat || $r->{'arch'} eq "noarch";
 	  $jobbins{$basename} = 1;
+          warn("copying $abin to $jobdatadir/$basename\n");
 	  BSUtil::cp($abin, "$jobdatadir/$basename");
 	  $jobrepo->{"$jobdatadir/$basename"} = $r;
 	  $copysources = 1 unless $nosource;
@@ -6321,6 +6388,7 @@ sub rebuildaggregate {
         for my $bin (@{$cpio || []}) {
 	  unlink("$jobdatadir/$bin->{'name'}");
 	}
+      }
       }
       last if $error;
     }
