@@ -425,7 +425,11 @@ class BsRequest < ActiveRecord::Base
     end
   end
 
-  IntermediateStates = %w(new review)
+  # Boss processes rely on seeing review state transitions so ensure
+  # these are visible. TODO: make this configurable so it can go
+  # upstream  
+  # IntermediateStates = %w(new review)
+  IntermediateStates = %w()
 
   def send_state_change
     return if self.state_was.to_s == self.state.to_s
