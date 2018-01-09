@@ -1253,27 +1253,9 @@ class SourceController < ApplicationController
     end unless @project
 
     if params.has_key? :nodelay
-
-      # Disable build temporarily if not disabled already
-      if @project.flags.where(status: 'disable', flag: 'build', repo: nil, architecture_id: nil, pkgname: nil).any?
-        build_disable = nil
-      else
-        build_disable = @project.flags.create(:status => 'disable', :flag => 'build')
-      end
-
-      # Disable publish temporarily if not disabled already
-      if @project.flags.where(status: 'disable', flag: 'publish', repo: nil, architecture_id: nil, pkgname: nil).any?
-        publish_disable = nil
-      else
-        publish_disable = @project.flags.create(:status => 'disable', :flag => 'publish')
-      end
-
+      # Build used to be disabled around the copy but now the backend
+      # does the suspend (consistent with upstream)
       @project.do_project_copy(params)
-
-      # Re-enable build and publish if they were temporarily disabled
-      build_disable.destroy if build_disable
-      publish_disable.destroy if publish_disable
-
       render_ok
     else
       # inject as job
