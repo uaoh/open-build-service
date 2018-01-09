@@ -1228,7 +1228,7 @@ class SourceController < ApplicationController
         @project.save
 
         oprj.flags.each do |f|
-          @project.flags.create(:status => f.status, :flag => f.flag, :architecture => f.architecture, :repo => f.repo) unless f.flag == 'lock'
+          @project.flags.create(:status => f.status, :flag => f.flag, :architecture => f.architecture, :repo => f.repo, :pkgname => f.pkgname) unless f.flag == 'lock'
         end
 
         oprj.linkedprojects.each do |l|
