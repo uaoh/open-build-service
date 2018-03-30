@@ -1235,9 +1235,11 @@ class SourceController < ApplicationController
           @project.linkedprojects.create( :linked_remote_project_name => l.linked_remote_project_name , :position => l.position ) if l.linked_remote_project_name
           @project.linkedprojects.create( :linked_db_project => Project.get_by_name(l.linked_db_project.name) , :position => l.position ) if l.linked_db_project
         end
-
+        # Allow easy lookup of this project repos for loopback <path> fixup
+        myreposbyname = {}
         oprj.repositories.each do |repo|
           r = @project.repositories.create :name => repo.name, :linkedbuild => repo.linkedbuild, :rebuild => repo.rebuild, :block => repo.block
+          myreposbyname[r.name] = r
           repo.repository_architectures.each do |ra|
             r.repository_architectures.create! :architecture => ra.architecture, :position => ra.position
           end
@@ -1245,6 +1247,24 @@ class SourceController < ApplicationController
           repo.path_elements.each do |pe|
             position += 1
             r.path_elements << PathElement.new(:link => pe.link, :position => position)
+          end
+        end
+        # At this point the repositories are created. If the original
+        # project contained <path> elements pointing to itself then
+        # make them point to the new project
+        @project.repositories.each do |repo|
+          repo.path_elements.each do |pe|
+            logger.debug "Copyproject checking <path> #{@project.name}/#{repo} #{pe.position} name=#{pe.link.project.name} repository=#{pe.link.name}"
+            if pe.link.project.name == oprj.name
+              if myreposbyname.key?(pe.link.name)
+                repo.path_elements.delete(pe)
+                pe.destroy
+                repo.path_elements.new :link => myreposbyname[pe.link.name], :position => pe.position
+                repo.save! # this is a rare event so just do it every time we reach here
+              else
+                logger.debug "Copyproject ERROR: #{@project.name} should have a repo called #{pe.link.name} but doesn't"
+              end
+            end
           end
         end
       end
