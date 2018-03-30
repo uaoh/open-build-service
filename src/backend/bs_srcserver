@@ -5409,6 +5409,7 @@ sub copyproject {
   my $oprojid = $cgi->{'oproject'};
   return $BSStdServer::return_ok if $oprojid eq $projid;
 
+  print "copyproject: Beginning from $oprojid to $projid\n";
   my $proj = readproj($projid);
   my $oproj = readproj($oprojid);
 
@@ -5447,6 +5448,7 @@ sub copyproject {
   my @pkgs = findpackages($oprojid);
   delete $cgi->{'servicemark'};		# just in case...
   for my $packid (@pkgs) {
+    print "copyproject: handling $projid/$packid\n";
     if (! -e "$projectsdir/$projid.pkg/$packid.xml") {
       # new package, create. hopefully the API can deal with this
       my $opack = readpack($oprojid, $packid, "1");
@@ -5553,7 +5555,7 @@ sub copyproject {
     }
   }
   if ($cgi->{'withbinaries'}) {
-
+    print "copyproject:($projid) withbinaries\n";
       # Iterate over all repositories and arches and call the repo
       # service to copy the binaries
       for my $repo (@{$proj->{'repository'} || []}) {
@@ -5580,13 +5582,13 @@ sub copyproject {
 	  $archs_to_ping{$arch} = 1; # Record schedulers to notify them after all copies are done
         }
       }
-
-    foreach (keys %archs_to_ping) {
-      ping_scheduler($_);
-    }
   }
   # check all packages in project
+  print "copyproject:($projid) request deep check and unsuspend\n";
   notify_repservers('package', $projid);
+  foreach (keys %archs_to_ping) {
+    ping_scheduler($_);
+  }
   return $BSStdServer::return_ok;	# also resumes the project
 }
 

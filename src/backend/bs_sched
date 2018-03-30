@@ -7073,8 +7073,11 @@ sub event_package {
   my $packid = $ev->{'package'};
   push @{$fetchprojpacks->{$projid}}, $packid;
   $deepcheck->{$projid} = 1 if !defined $packid;
+  if (defined($packid) && $projsuspended{$projid}) {
+    print "package event: $packid for suspended project $projid\n";
+  }
   if (!defined($packid) && $projsuspended{$projid}) {
-    print "resuming project $projid\n";
+    print "got a package event with no packid so resuming suspended project $projid and doing deep check\n";
     delete $projsuspended{$projid};
   }
 }
@@ -8421,6 +8424,7 @@ NEXTPRP:
     }
 
     if ($projsuspended{$projid}) {
+      print "$projid is suspended; blocking $prp\n";
       set_repo_state($prp, 'blocked', $projsuspended{$projid});
       next;
     }

@@ -1966,7 +1966,7 @@ sub copybuild_binary {
 	 ){
     my $destname;
     ($destname = $_) =~ s/$orig_dir/$dest_dir/;
-    copy($_, $destname) || warn("error copying $_\n");
+    copy($_, $destname) || warn("error copying volatile $_ to $destname\n");
   }
 
   # Link all the big files where hardlinks save space and the links
@@ -1977,7 +1977,7 @@ sub copybuild_binary {
 	 ){
     my $destname;
     ($destname = $_) =~ s/$orig_dir/$dest_dir/;
-    link($_, $destname) || warn("error linking $_\n");
+    link($_, $destname) || warn("error linking $_ to $destname\n");
   }
 
   #get list of packages
@@ -2018,7 +2018,7 @@ sub copybuild_binary {
       link("$orig_dir/$opackid/$bin", "$dest_dir/$packid/$bin") || warn("problem linking $orig_dir/$opackid/$bin $dest_dir/$packid/$bin: $!\n");
     }
   }
-  warn("Copied $projid, $repoid, $arch\n");
+  warn("Copied $projid, $repoid, $arch - no events sent\n");
 
   # So far all this has been done at filesystem level, no events to
   # schedulers. Now let them know
