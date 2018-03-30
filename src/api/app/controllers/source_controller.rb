@@ -1237,7 +1237,7 @@ class SourceController < ApplicationController
         end
 
         oprj.repositories.each do |repo|
-          r = @project.repositories.create :name => repo.name, :linkedbuild => repo.linkedbuild
+          r = @project.repositories.create :name => repo.name, :linkedbuild => repo.linkedbuild, :rebuild => repo.rebuild, :block => repo.block
           repo.repository_architectures.each do |ra|
             r.repository_architectures.create! :architecture => ra.architecture, :position => ra.position
           end
