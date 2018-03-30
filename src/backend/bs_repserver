@@ -2007,7 +2007,9 @@ sub copybuild_binary {
 	       "$orig_dir/$opackid/status",) {
 	my $destname;
 	($destname = $_) =~ s/$orig_dir/$dest_dir/;
-	copy($_, $destname) || warn("error copying $_\n");
+	if (-e $_) {
+	  copy($_, $destname) || warn("error copying $_ to $destname\n");
+	}
       }
     }
 
