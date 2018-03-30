@@ -2023,12 +2023,7 @@ sub copybuild_binary {
   warn("Copied $projid, $repoid, $arch - no events sent\n");
 
   # So far all this has been done at filesystem level, no events to
-  # schedulers. Now let them know
-  mkdir_p("$eventdir/$arch");
-  my $evname = "package::${projid}::$repoid";
-  my $checkev = {'type' => 'package', 'project' => $projid, 'repository' => $repoid};
-  writexml("$eventdir/$arch/.$evname$$", "$eventdir/$arch/$evname", $checkev, $BSXML::event);
-  dirty($projid, $repoid, $arch) if $arch ne 'signer';
+  # schedulers. They will be informed by the srcserver when complete.
 
   return $BSStdServer::return_ok;
 }
