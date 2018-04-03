@@ -1125,7 +1125,7 @@ class Project < ActiveRecord::Base
     # copy entire project in the backend
     begin
       path = "/source/#{URI.escape(self.name)}"
-      path << Suse::Backend.build_query_from_hash(params, [:cmd, :user, :comment, :oproject, :withbinaries, :withhistory, :makeolder, :noservice, :withprjconf])
+      path << Suse::Backend.build_query_from_hash(params, [:cmd, :user, :comment, :oproject, :withbinaries, :withhistory, :makeolder, :noservice, :withprjconf, :noresume])
       Suse::Backend.post path, nil
     rescue ActiveXML::Transport::Error => e
       logger.debug "copy failed: #{e.summary}"
@@ -1142,6 +1142,32 @@ class Project < ActiveRecord::Base
       p.save! # do not store
     end
     packages.each { |p| p.sources_changed }
+  end
+
+  def do_project_suspend( params )
+    check_write_access!
+
+    # suspend project in the backend
+    begin
+      path = "/source/#{URI.escape(self.name)}"
+      path << Suse::Backend.build_query_from_hash(params, [:cmd])
+      Suse::Backend.post path, nil
+    rescue ActiveXML::Transport::Error => e
+      logger.debug "suspend failed: #{e.summary}"
+    end
+  end
+
+  def do_project_resume( params )
+    check_write_access!
+
+    # resume project in the backend
+    begin
+      path = "/source/#{URI.escape(self.name)}"
+      path << Suse::Backend.build_query_from_hash(params, [:cmd])
+      Suse::Backend.post path, nil
+    rescue ActiveXML::Transport::Error => e
+      logger.debug "resume failed: #{e.summary}"
+    end
   end
 
   # called either directly or from delayed job

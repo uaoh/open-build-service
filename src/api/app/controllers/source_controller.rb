@@ -186,7 +186,7 @@ class SourceController < ApplicationController
     # init and validation
     #--------------------
     valid_commands=%w(undelete showlinked remove_flag set_flag createpatchinfo createkey extendkey copy
-                      createmaintenanceincident unlock release addchannels)
+                      createmaintenanceincident unlock release addchannels suspend resume)
     if params[:cmd]
       raise IllegalRequest.new 'invalid_command' unless valid_commands.include?(params[:cmd])
       command = params[:cmd]
@@ -1216,6 +1216,10 @@ class SourceController < ApplicationController
           raise ProjectCopyNoPermission.new "no permission to copy project due to source protected package #{pkg.name}"
         end
       end
+
+      if params[:noresume]
+        raise ProjectCopyNoPermission.new 'no permission to defer resume on copyproject for non admins'
+      end
     end
 
     # create new project object based on oproject
@@ -1282,6 +1286,33 @@ class SourceController < ApplicationController
       @project.delay.do_project_copy(params)
       render_invoked
     end
+  end
+
+  # POST /source/<project>?cmd=resume
+  def project_command_resume
+    project_name = params[:project]
+
+    @project = Project.find_by_name(project_name)
+    unless (@project and User.current.is_admin?)
+      raise CmdExecutionNoPermission.new "no permission to execute command 'resume'"
+    end
+
+    @project.do_project_resume(params)
+    render_ok
+
+  end
+  # POST /source/<project>?cmd=suspend
+  def project_command_suspend
+    project_name = params[:project]
+
+    @project = Project.find_by_name(project_name)
+    unless (@project and User.current.is_admin?)
+      raise CmdExecutionNoPermission.new "no permission to execute command 'suspend'"
+    end
+
+    @project.do_project_suspend(params)
+    render_ok
+
   end
 
   # POST /source/<project>?cmd=createpatchinfo

@@ -5583,13 +5583,60 @@ sub copyproject {
         }
       }
   }
-  # check all packages in project
-  print "copyproject:($projid) request deep check and unsuspend\n";
+  # If this is part of a number of interlinked project copies allow
+  # the resume to be done later
+  if ($cgi->{'noresume'}) {
+    print "copyproject:($projid) Not resuming project as requested.\n";
+  } else {
+    # check all packages in project
+    print "copyproject:($projid) resume and deep check packages\n";
+    notify_repservers('package', $projid);
+    foreach (keys %archs_to_ping) {
+      ping_scheduler($_);
+    }
+  }
+  return $BSStdServer::return_ok;	# also resumes the project
+}
+
+sub suspendproject {
+  my ($cgi, $projid) = @_;
+
+  print "suspendproject: Suspending $projid\n";
+  my $proj = readproj($projid);
+
+  # signal suspend of project
+  notify_repservers('suspendproject', $projid, undef, "project suspended by user");
+
+  my %archs_to_ping;
+  for my $repo (@{$proj->{'repository'} || []}) {
+    for my $arch (@{$repo->{'arch'} || []}) {
+      $archs_to_ping{$arch} = 1; # Record schedulers to notify them after suspend
+    }
+  }
+  foreach (keys %archs_to_ping) {
+    ping_scheduler($_);
+  }
+  return $BSStdServer::return_ok;
+}
+
+sub resumeproject {
+  my ($cgi, $projid) = @_;
+
+  print "resumeproject: Resuming $projid\n";
+  my $proj = readproj($projid);
+
+  my %archs_to_ping;
+  for my $repo (@{$proj->{'repository'} || []}) {
+    for my $arch (@{$repo->{'arch'} || []}) {
+      $archs_to_ping{$arch} = 1; # Record schedulers to notify them after resume
+    }
+  }
+  # Resume and check all packages in project
   notify_repservers('package', $projid);
   foreach (keys %archs_to_ping) {
     ping_scheduler($_);
   }
-  return $BSStdServer::return_ok;	# also resumes the project
+  return $BSStdServer::return_ok;
 }
 
 # we're going to auto-update a link. this means we must also
@@ -7874,7 +7921,9 @@ my $dispatches = [
   'POST:/source/$project cmd=createkey user:? comment:?' => \&createkey,
   'POST:/source/$project cmd=extendkey user:? comment:?' => \&extendkey,
   'POST:/source/$project cmd=undelete user:? comment:?' => \&undeleteproject,
-  'POST:/source/$project cmd=copy user:? comment:? oproject:project withbinaries:bool? withhistory:bool? makeolder:bool? resign:bool? noservice:bool? withprjconf:bool?' => \&copyproject,
+  'POST:/source/$project cmd=copy user:? comment:? oproject:project withbinaries:bool? withhistory:bool? makeolder:bool? resign:bool? noservice:bool? withprjconf:bool? noresume:bool?' => \&copyproject,
+  'POST:/source/$project cmd=suspend' => \&suspendproject,
+  'POST:/source/$project cmd=resume' => \&resumeproject,
   'POST:/source/$project cmd: *:*' => \&unknowncmd,
   '/source/$project view=info parse:bool? nofilename:bool? repository? arch? package* withchangesmd5:bool?' => \&getprojectsourceinfo,
   '/source/$project deleted:bool? expand:bool? noorigins:bool?' => \&getpackagelist,
