@@ -2973,7 +2973,8 @@ sub dobuild {
   push @args, '--changelog';
   push @args, '--oldpackages', $oldpkgdir if $oldpkgdir && -d $oldpkgdir;
   push @args, '--norootforbuild' unless $buildinfo->{'rootforbuild'} || ($BSConfig::norootexceptions && grep {"$projid/$packid" =~ /^$_$/} keys %$BSConfig::norootexceptions);
-  push @args, '--baselibs-internal';
+  # Change from '--baselibs-internal' to '--baselibs' which will use internal if there is one.
+  push @args, '--baselibs';
   push @args, '--lint';
   push @args, '--dist', "$buildroot/.build.config";
   push @args, '--rpmlist', "$buildroot/.build.rpmlist";
