@@ -12,7 +12,7 @@ tdir=`mktemp -d`
 # extract files
 tar xJf $sourcearchive -C $tdir >&/dev/null
 
-pushd $tdir/open-build-service*/src/api >& /dev/null
+pushd $tdir/*/src/api >& /dev/null
 ruby.ruby2.5 -rbundler -e 'exit' || echo "___ERROR_BUNDLER_NOT_INSTALLED___"
 
 mode="resolve"
