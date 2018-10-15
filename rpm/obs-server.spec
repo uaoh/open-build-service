@@ -58,7 +58,7 @@ Version:        2.7.50_113_g117c617
 Release:        0
 Url:            http://www.openbuildservice.org
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Source0:        open-build-service-%version.tar.xz
+Source0:        %name-%version.tar.xz
 Source1:        find-requires.sh
 BuildRequires:  python-devel
 # make sure this is in sync with the RAILS_GEM_VERSION specified in the
@@ -298,7 +298,7 @@ This package contains all the necessary tools for upload images to the cloud.
 #--------------------------------------------------------------------------------
 %prep
 
-%setup -q -n open-build-service-%version
+%setup -q -n %name-%version
 
 # drop build script, we require the installed one from own package
 rm -rf src/backend/build
@@ -353,11 +353,11 @@ if ! test -L %{buildroot}/usr/lib/obs/server/build; then
   exit 1
 fi
 
-install -m 755 $RPM_BUILD_DIR/open-build-service-%version/dist/clouduploader.rb $RPM_BUILD_ROOT/%{_bindir}/clouduploader
+install -m 755 $RPM_BUILD_DIR/%name-%version/dist/clouduploader.rb $RPM_BUILD_ROOT/%{_bindir}/clouduploader
 mkdir -p $RPM_BUILD_ROOT/etc/obs/cloudupload
-install -m 644 $RPM_BUILD_DIR/open-build-service-%version/dist/ec2utils.conf.example $RPM_BUILD_ROOT/etc/obs/cloudupload/.ec2utils.conf
+install -m 644 $RPM_BUILD_DIR/%name-%version/dist/ec2utils.conf.example $RPM_BUILD_ROOT/etc/obs/cloudupload/.ec2utils.conf
 mkdir -p $RPM_BUILD_ROOT/etc/obs/cloudupload/.aws
-install -m 644 $RPM_BUILD_DIR/open-build-service-%version/dist/aws_credentials.example $RPM_BUILD_ROOT/etc/obs/cloudupload/.aws/credentials
+install -m 644 $RPM_BUILD_DIR/%name-%version/dist/aws_credentials.example $RPM_BUILD_ROOT/etc/obs/cloudupload/.aws/credentials
 
 %check
 %if 0%{?disable_obs_test_suite}
@@ -388,7 +388,7 @@ pushd $RPM_BUILD_ROOT/usr/lib/obs/server/
 for i in bs_*; do
   perl -wc "$i"
 done
-bash $RPM_BUILD_DIR/open-build-service-%version/src/backend/testdata/test_dispatcher || exit 1
+bash $RPM_BUILD_DIR/%name-%version/src/backend/testdata/test_dispatcher || exit 1
 popd
 
 make -C src/backend test

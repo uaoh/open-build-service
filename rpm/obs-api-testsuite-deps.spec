@@ -24,7 +24,7 @@ Version:        2.7.5020140303
 Release:        0
 Url:            http://en.opensuse.org/Build_Service
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Source0:        open-build-service-%version.tar.xz
+Source0:        %name-%version.tar.xz
 Source1:        find-requires.sh
 BuildRequires:  ruby2.5
 BuildRequires:  ruby2.5-rubygem-bundler
