@@ -233,3 +233,13 @@ unconfirmed_user:
   realname: ''
   password_digest: $2a$10$kvnsKtwOAqKeBYpaDhzQfOTZ7BuSjShOvnwqp4tFRLk1YUwLAH6la
   state: "unconfirmed"
+sb2:
+  created_at: 2012-01-16 13:36:00.000000000 Z
+  updated_at: 2012-01-16 13:36:00.000000000 Z
+  last_logged_in_at: 2012-01-16 13:36:00.000000000 Z
+  login_failure_count: 0
+  login: sb2
+  email: sb2@example.com
+  realname: 'SB2 testing'
+  password_digest: $2a$10$kvnsKtwOAqKeBYpaDhzQfOTZ7BuSjShOvnwqp4tFRLk1YUwLAH6la
+  state: "confirmed"

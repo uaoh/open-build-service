@@ -19,7 +19,10 @@ class BuildFlagTest < ActiveSupport::TestCase
 
     # create two new flags and save it.
     for i in 1..2 do
-      f = Flag.new(repo: "10.#{i}", status: 'enable', flag: 'build')
+      f = Flag.new(repo: "10.#{i}",
+                   status: 'enable',
+                   flag: 'build',
+                   pkgname: "test#{i}")
       f.architecture = @arch
       @project.flags << f
     end
@@ -37,6 +40,7 @@ class BuildFlagTest < ActiveSupport::TestCase
     assert_equal @project.id, f.project_id
     assert_nil f.package_id
     assert_equal 3, f.position
+    assert_equal 'test1', f.pkgname
 
     f = @project.flags.of_type('build')[3]
 
@@ -46,6 +50,7 @@ class BuildFlagTest < ActiveSupport::TestCase
     assert_equal @project.id, f.project_id
     assert_nil f.package_id
     assert_equal 4, f.position
+    assert_equal 'test2', f.pkgname
   end
 
   def test_add_build_flag_to_package
