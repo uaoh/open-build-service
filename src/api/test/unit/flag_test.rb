@@ -31,4 +31,26 @@ class FlagTest < ActiveSupport::TestCase
     f.to_xml(builder)
     assert_xml_tag builder.to_xml, tag: 'enable', attributes: { repository: '999.999', arch: 'i586' }
   end
+
+  def test_per_package_flag
+    f = Flag.new(project: projects(:home_sb2),
+                 architecture: architectures(:i586),
+                 repo: '42.42.42',
+                 flag: 'build',
+                 pkgname: 'test6',
+                 status: 'enable')
+    assert_equal true, f.save
+
+    f = Flag.find_by_repo('42.42.42')
+    assert_kind_of Flag, f
+    assert_equal f.to_s, "enable arch=i586 repo=42.42.42 package=test6"
+
+    builder = Nokogiri::XML::Builder.new
+    f.to_xml(builder)
+    assert_xml_tag builder.to_xml,
+                   tag: 'enable',
+                   attributes: { repository: '42.42.42',
+                                 arch: 'i586',
+                                 package: 'test6' }
+  end
 end

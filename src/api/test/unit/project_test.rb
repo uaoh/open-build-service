@@ -1,3 +1,4 @@
+# coding: utf-8
 require File.expand_path(File.dirname(__FILE__) + '/..') + '/test_helper'
 require 'json'
 # require '/usr/lib64/ruby/gems/1.9.1/gems/perftools.rb-2.0.0/lib/perftools.so'
@@ -1339,4 +1340,58 @@ class ProjectTest < ActiveSupport::TestCase
     maintenance = projects(:My_Maintenance)
     assert_equal maintenance.open_requests, reviews: [], targets: [6], incidents: [6], maintenance_release: [7]
   end
+
+  def test_per_package_build_flags
+    User.current = users(:sb2)
+
+    # Create the test project with one pac enabled for one repo
+    project = Project.create(name: 'home:sb2:perpackageflagtest')
+    axml = Xmlhash.parse("
+      <project name='home:sb2:perpackageflagtest'>
+        <title>Per-package build flag test project</title>
+        <description>dummy</description>
+        <build>
+          <disable arch='i586' repository='openSUSE_Leap_42.2' />
+          <enable arch='i586' repository='openSUSE_Leap_42.2' package='test5' />
+        </build>
+        <repository name='openSUSE_Leap_42.2'>
+          <arch>i586</arch>
+        </repository>
+      </project>
+    ")
+    project.update_from_xml(axml)
+    project.store
+    project.reload
+
+    # Check flags
+    project.get_flags('build').each do |repo|
+      repo[1].each do |flag|
+        if flag.position
+          if flag.repo == 'openSUSE_Leap_42.2' &&
+             flag.pkgname == 'test5' &&
+             flag.architecture_id == project.flags.of_type('build')[1].architecture.id
+            assert_equal 'enable', flag.status
+          else
+            assert_equal 'disable', flag.status
+          end
+        end
+      end
+    end
+  end
+
+  def test_sb2install_in_config
+    project_config = @project.config.to_s
+    new_project_config = File.read('test/fixtures/files/sb2install_project_config.txt')
+
+    User.current = users(:sb2)
+    query_params = { user: User.current.login, comment: 'Updated by test' }
+    assert @project.config.save(query_params, new_project_config)
+    assert_equal @project.config.to_s, new_project_config
+
+    assert @project.config.to_s =~ /^SB2install: sb2-tools-%{_my_port_arch}-inject/
+
+    # Leave the backend file as it was
+    assert @project.config.save(query_params, project_config)
+  end
+
 end

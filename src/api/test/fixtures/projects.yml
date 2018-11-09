@@ -291,3 +291,11 @@ BrokenPublishing:
   updated_at: 2005-01-02 01:00:01.000000000 Z
   kind: standard
   delta: 1
+home_sb2:
+  name: home:sb2
+  title: testing
+  description: SB2-related testing
+  created_at: 2018-11-15 01:00:01.000000000 Z
+  updated_at: 2018-11-15 01:00:01.000000000 Z
+  kind: standard
+  delta: 1

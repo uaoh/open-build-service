@@ -1132,9 +1132,17 @@ class Project < ApplicationRecord
       next if f.flag == 'publish' && disable_publish_for_branches
       # NOTE: it does not matter if that flag is set to enable or disable, so we do not check fro
       #       for same flag status here explizit
-      next if flags.where(flag: f.flag, architecture: f.architecture, repo: f.repo).exists?
+      next if flags.where(flag: f.flag,
+                          architecture: f.architecture,
+                          repo: f.repo,
+                          pkgname: f.pkgname
+                         ).exists?
 
-      flags.create(status: f.status, flag: f.flag, architecture: f.architecture, repo: f.repo)
+      flags.create(status: f.status,
+                   flag: f.flag,
+                   architecture: f.architecture,
+                   repo: f.repo,
+                   pkgname: f.pkgname)
     end
 
     return unless disable_publish_for_branches
