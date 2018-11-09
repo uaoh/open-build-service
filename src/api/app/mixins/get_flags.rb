@@ -15,13 +15,26 @@ module GetFlags
       # [nil] is a placeholder for "all" architectures
       [nil].concat(architectures.reorder('name').distinct).each do |architecture|
         architecture_id = architecture ? architecture.id : nil
-        flag = flags.where(flag: flag_type).where(repo: repository).where(architecture_id: architecture_id).first
+        flagcount = 0
+        pkgnames = flags.distinct.pluck(:pkgname)
+        pkgnames.each do |pkgname|
+          flag = flags
+                   .where(flag: flag_type)
+                   .where(repo: repository)
+                   .where(architecture_id: architecture_id)
+                   .where(pkgname: pkgname)
+                   .first
+          if flag
+            the_flags[repository] << flag
+            flagcount += 1
+          end
+        end
         # If there is no flag create a temporary one.
-        unless flag
+        if flagcount == 0
           flag = flags.new(flag: flag_type, repo: repository, architecture: architecture)
           flag.status = flag.effective_status
+          the_flags[repository] << flag
         end
-        the_flags[repository] << flag
       end
     end
     the_flags['all'] = the_flags.delete(nil)

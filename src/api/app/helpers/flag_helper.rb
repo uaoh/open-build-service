@@ -68,7 +68,7 @@ module FlagHelper
     position
   end
 
-  def remove_flag(flag, repository, arch = nil)
+  def remove_flag(flag, repository, arch = nil, pkgname = nil)
     validate_type flag
     flaglist = flags.of_type(flag)
     arch = Architecture.find_by_name(arch) if arch
@@ -79,6 +79,8 @@ module FlagHelper
       next if repository.blank? && f.repo.present?
       next if arch.present? && f.architecture != arch
       next if arch.blank? && !f.architecture.nil?
+      next if pkgname.present? && f.pkgname != pkgname
+      next if pkgname.blank? && f.pkgname.present?
       flags_to_remove << f
     end
     flags.delete(flags_to_remove)
