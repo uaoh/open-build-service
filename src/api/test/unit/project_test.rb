@@ -1377,7 +1377,21 @@ class ProjectTest < ActiveSupport::TestCase
         end
       end
     end
+  end
 
+  def test_sb2install_in_config
+    project_config = @project.config.to_s
+    new_project_config = File.read('test/fixtures/files/sb2install_project_config.txt')
+
+    User.current = users(:sb2)
+    query_params = { user: User.current.login, comment: 'Updated by test' }
+    assert @project.config.save(query_params, new_project_config)
+    assert_equal @project.config.to_s, new_project_config
+
+    assert @project.config.to_s =~ /^SB2install: sb2-tools-%{_my_port_arch}-inject/
+
+    # Leave the backend file as it was
+    assert @project.config.save(query_params, project_config)
   end
 
 end

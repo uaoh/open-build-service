@@ -1,0 +1,12 @@
+Type: spec
+Substitute: kiwi package
+Substitute: kiwi-packagemanager:instsource package
+Ignore: package:bash
+Ignore: package:cups
+
+%if %{_cross_sb2_enabled}
+SB2install: sb2-tools-%{_my_port_arch}-inject
+SB2flags: --toolchain %{_my_port_crosscompiler} --qemu %{_my_port_qemu} --mappingmethod C --defaultmode obs-rpm-build+pp
+Required: sb2-tools-%{_my_port_arch}-dependency-inject
+Hostarch: i586
+%endif
